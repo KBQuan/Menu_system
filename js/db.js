@@ -32,7 +32,17 @@ const VegeBentoDB = {
           .from('vege_bento_main_dishes')
           .select('*')
           .order('id', { ascending: true });
-        if (!error && data) return data;
+        if (!error && data) {
+          // 將資料庫的蛇形命名法對應回前端程式預期的駝峰命名法
+          return data.map(dish => ({
+            id: dish.id,
+            name: dish.name,
+            vegType: dish.veg_type || '全素',
+            priceType: dish.price_type || 'all',
+            specificPrice: dish.specific_price || '',
+            available: dish.available !== undefined ? dish.available : true
+          }));
+        }
         console.error('Supabase getDishes error:', error);
       } catch (err) {
         console.error('Supabase getDishes exception:', err);
