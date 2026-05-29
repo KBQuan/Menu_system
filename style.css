@@ -1,0 +1,202 @@
+/* VegeBento Go! Client-Side Styles */
+
+[x-cloak] {
+  display: none !important;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans TC', sans-serif;
+  background-color: #f4f9f6;
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* 淺色微光液態粒子塊 */
+.liquid-mesh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  filter: blur(70px);
+  opacity: 0.65;
+  background: 
+    radial-gradient(circle at 15% 20%, rgba(52, 211, 153, 0.3) 0%, transparent 45%),
+    radial-gradient(circle at 80% 25%, rgba(56, 189, 248, 0.25) 0%, transparent 40%),
+    radial-gradient(circle at 50% 80%, rgba(192, 132, 252, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 75% 65%, rgba(251, 191, 36, 0.15) 0%, transparent 35%);
+  animation: liquidPulse 22s infinite alternate ease-in-out;
+}
+
+@keyframes liquidPulse {
+  0% { transform: scale(1) translate(0px, 0px); }
+  50% { transform: scale(1.08) translate(15px, -20px); }
+  100% { transform: scale(0.95) translate(-5px, 15px); }
+}
+
+/* --- 磨砂玻璃視覺與按鈕體系 (與後台管理完全一致) --- */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  border-radius: 24px;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 15px 35px rgba(16, 46, 32, 0.08), 0 0 15px rgba(22, 163, 74, 0.15);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(34, 197, 94, 0.8);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+/* 普通 / 次要按鈕 */
+.glass-btn {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-btn:hover {
+  background: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1.5px);
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08);
+}
+
+.glass-btn:active {
+  transform: translateY(0.5px);
+}
+
+/* 主要動作按鈕 (綠色漸層) */
+.glass-btn-primary {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.75), rgba(16, 185, 129, 0.75));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px 0 rgba(34, 197, 94, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-btn-primary:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(16, 185, 129, 0.9));
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px 0 rgba(34, 197, 94, 0.35);
+}
+
+.glass-btn-primary:active {
+  transform: translateY(0.5px);
+}
+
+.tab-segment {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  background: rgba(34, 197, 94, 0.12);
+  border-radius: 9999px;
+  padding: 2px;
+}
+
+.tab-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  background: transparent;
+  color: #475569;
+  border-radius: 0;
+}
+
+.tab-button:first-child {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+}
+
+.tab-button:last-child {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+}
+
+.tab-button.tab-active {
+  animation: jellySlide 0.45s ease;
+  box-shadow: 0 12px 22px rgba(16, 185, 129, 0.18);
+  background: rgba(255, 255, 255, 0.95);
+  color: #166534;
+}
+
+.tab-button:hover {
+  color: #166534;
+}
+
+@keyframes jellySlide {
+  0% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-4px) scale(1.04, 0.96); }
+  50% { transform: translateY(0) scale(0.98, 1.06); }
+  75% { transform: translateY(-2px) scale(1.02, 0.98); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* 危險 / 刪除動作按鈕 (紅色漸層) */
+.glass-btn-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.75), rgba(220, 38, 38, 0.75));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px 0 rgba(239, 68, 68, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-btn-danger:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px 0 rgba(239, 68, 68, 0.3);
+}
+
+.glass-btn-danger:active {
+  transform: translateY(0.5px);
+}
+
+/* 淺色模態窗毛玻璃 */
+.liquid-glass-modal {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(30px) saturate(170%);
+  -webkit-backdrop-filter: blur(30px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 25px 60px -12px rgba(15, 32, 23, 0.15);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.4);
+}

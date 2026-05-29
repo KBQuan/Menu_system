@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VegeBento Go! 智慧素食便當訂購與管理系統</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: 'rgba(240, 253, 244, 0.6)',
+              100: 'rgba(220, 252, 231, 0.7)',
+              200: 'rgba(187, 247, 208, 0.8)',
+              500: '#16a34a', // 統一成後台的 Emerald 綠色
+              600: '#15803d',
+              700: '#166534',
+            },
+            fresh: {
+              50: 'rgba(236, 253, 245, 0.6)',
+              500: '#059669',
+              600: '#047857',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/db.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-cover bg-center bg-fixed"
+  style="background-image: url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=2000&auto=format&fit=crop');"
+  x-data="bentoApp()" x-init="init()">
+  <div class="liquid-mesh"></div>
+
+  <div class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none">
+    <template x-if="toast.show">
+      <div x-transition:enter="transition ease-out duration-300 transform translate-y-[-20px] opacity-0"
+        x-transition:enter-end="transform translate-y-0 opacity-100"
+        x-transition:leave="transition ease-in duration-200 transform translate-y-[-10px] opacity-0"
+        class="pointer-events-auto flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-lg border min-w-[320px] max-w-md backdrop-blur-xl bg-white/75"
+        :class="{
+             'border-green-200 text-green-900 shadow-green-900/5': toast.type === 'success',
+             'border-amber-200 text-amber-900 shadow-amber-900/5': toast.type === 'warning',
+             'border-rose-200 text-rose-900 shadow-rose-900/5': toast.type === 'danger'
+           }">
+        <span class="text-lg">
+          <template x-if="toast.type === 'success'"><i class="fa-solid fa-circle-check text-green-500"></i></template>
+          <template x-if="toast.type === 'warning'"><i
+              class="fa-solid fa-circle-exclamation text-yellow-500"></i></template>
+          <template x-if="toast.type === 'danger'"><i class="fa-solid fa-circle-xmark text-red-500"></i></template>
+        </span>
+        <div class="flex-1 font-semibold text-sm" x-text="toast.message"></div>
+      </div>
+    </template>
+  </div>
+
+  <header class="glass-panel !rounded-none !border-t-0 !border-x-0 border-b sticky top-0 z-30 shadow-sm bg-white/55">
+    <div class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-11 h-11 bg-gradient-to-tr from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md text-white">
+          <i class="fa-solid fa-utensils text-xl"></i></div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-900 tracking-tight flex items-center gap-2">
+            <span>VegeBento Go!</span>
+            <span
+              class="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full tracking-widest">LIGHT
+              LIQUID</span>
+          </h1>
+          <p class="text-xs text-slate-500 font-medium mt-0.5">流光液態美學 · 智慧蔬食點餐大廳</p>
+        </div>
+      </div>
+
+      <nav class="tab-segment">
+        <button @click="activeTab = 'client'; showHistoryModal = false"
+          :class="['tab-button', activeTab === 'client' ? 'tab-active' : '']"
+          class="px-5 py-2 text-sm transition-all duration-200 flex items-center justify-center gap-2">
+          <span></span> 填寫點餐單
+        </button>
+        <button @click="openHistory()" :class="['tab-button', activeTab === 'history' ? 'tab-active' : '']"
+          class="px-5 py-2 text-sm transition-all duration-200 flex items-center justify-center gap-2">
+          <span></span> 歷史紀錄 (<span class="font-mono text-green-600 font-bold" x-text="userHistory.length">0</span>)
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main
+    class="flex-1 w-full max-w-full mx-auto min-w-0 px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <aside class="lg:col-span-4 space-y-6">
+      <div class="glass-panel p-5 space-y-4">
+        <div class="flex items-center gap-3">
+          <span class="text-lg p-2 bg-emerald-500/10 text-emerald-700 rounded-xl font-bold">📣</span>
+          <div>
+            <h2 class="font-bold text-base text-slate-900">最新公告</h2>
+            <p class="text-xs text-slate-500">管理者資訊、活動提醒與系統公告</p>
+          </div>
+        </div>
+
+        <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white/70 shadow-sm">
+          <img :src="photoSlides[currentSlideIndex].src" :alt="photoSlides[currentSlideIndex].label"
+            class="w-full h-56 object-cover transition-all duration-700 ease-out">
+          <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/80 to-transparent p-4">
+            <p class="text-xs text-slate-200 uppercase tracking-[0.2em]">動態引導</p>
+            <p class="text-sm font-bold text-white" x-text="photoSlides[currentSlideIndex].label"></p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-center gap-2">
+          <template x-for="(slide, idx) in photoSlides" :key="idx">
+            <button type="button" @click="currentSlideIndex = idx"
+              :class="idx === currentSlideIndex ? 'bg-emerald-500' : 'bg-slate-300'"
+              class="w-2.5 h-2.5 rounded-full transition-all"></button>
+          </template>
+        </div>
+
+        <div class="space-y-3 bg-slate-50 p-4 rounded-3xl border border-slate-200">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-slate-900">公告重點</h3>
+            <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">之後更新</span>
+          </div>
+          <template x-for="(item, index) in announcements" :key="index">
+            <div class="border-b border-slate-200 last:border-b-0 pb-3 last:pb-0">
+              <p class="text-xs font-semibold text-emerald-700" x-text="item.title"></p>
+              <p class="text-xs text-slate-600 mt-1" x-text="item.body"></p>
+            </div>
+          </template>
+        </div>
+      </div>
+    </aside>
+
+    <section class="lg:col-span-8 w-full space-y-6">
+
+      <div class="glass-panel p-6 space-y-5">
+        <div class="flex items-center justify-between border-b border-green-900/5 pb-4">
+          <div class="flex items-center gap-3">
+            <span class="text-lg p-2 bg-green-500/10 text-green-600 rounded-xl font-bold">📋</span>
+            <div>
+              <h2 class="font-bold text-base text-slate-900">購基本資訊</h2>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">請確實輸入單位與姓名，以利後台配餐流程</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">訂購單位<span
+                class="text-rose-500">*</span></label>
+            <input type="text" x-model="clientForm.unit" placeholder="例如：研發部 / 行銷課"
+              class="w-full glass-input rounded-xl px-4 py-3 text-sm font-medium focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">訂購人姓名<span
+                class="text-rose-500">*</span></label>
+            <input type="text" x-model="clientForm.userName" placeholder="請輸入您的真實姓名"
+              class="w-full glass-input rounded-xl px-4 py-3 text-sm font-medium focus:outline-none">
+          </div>
+        </div>
+
+        <div
+          class="pt-2 flex flex-wrap gap-6 items-center justify-between bg-green-900/[0.02] rounded-xl p-4 border border-dashed border-green-500/20">
+          <div class="flex items-center gap-3">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="clientForm.needTableware" class="sr-only peer">
+              <div
+                class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500">
+              </div>
+              <span class="ml-3 text-sm font-bold text-slate-600">需要免洗餐具</span>
+            </label>
+          </div>
+
+          <button @click="toggleCustomization()"
+            class="text-xs font-bold px-4 py-2 rounded-xl border flex items-center gap-2 transition-all shadow-sm glass-btn"
+            :class="clientForm.isCustomized ? 'bg-amber-500/10 text-amber-700 border-amber-300' : 'text-slate-600 border-slate-200'">
+            <span x-text="clientForm.isCustomized ? '切換為 ➔ 團體單一規格' : '開放 ➔ 為每位同仁客製餐點'"></span>
+          </button>
+        </div>
+      </div>
+
+      <div x-show="!clientForm.isCustomized" x-transition.opacity class="glass-panel p-6 space-y-6">
+        <div class="flex items-center justify-between border-b border-green-900/5 pb-4">
+          <div class="flex items-center gap-3">
+            <span class="text-lg p-2 bg-green-500/10 text-green-600 rounded-xl font-bold">📦</span>
+            <div>
+              <h2 class="font-bold text-base text-slate-900">您需要的餐點 (全體一致)</h2>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">批量點餐、全體同仁主菜相同</p>
+            </div>
+          </div>
+          <div class="w-24">
+            <label
+              class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 text-right">訂購數量</label>
+            <input type="number" min="1" max="100" x-model.number="clientForm.singleBento.quantity"
+              class="w-full glass-input rounded-xl px-3 py-1.5 text-sm font-bold text-center text-green-600 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">預算價位</label>
+            <select x-model="clientForm.singleBento.price" @change="filterMainDishes(clientForm.singleBento)"
+              class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+              <option value="70">NT$ 70 </option>
+              <option value="80">NT$ 80 </option>
+              <option value="90">NT$ 90 </option>
+              <option value="100">NT$ 100 </option>
+              <option value="other">自訂其他金額</option>
+            </select>
+            <template x-if="clientForm.singleBento.price === 'other'">
+              <input type="number" x-model="clientForm.singleBento.otherPrice"
+                @input="filterMainDishes(clientForm.singleBento)" placeholder="輸入金額"
+                class="w-full mt-2 glass-input rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none text-center">
+            </template>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">素食選別</label>
+            <select x-model="clientForm.singleBento.vegType" @change="filterMainDishes(clientForm.singleBento)"
+              class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+              <template x-for="type in vegTypeOptions" :key="type">
+                <option :value="type" x-text="type"></option>
+              </template>
+            </select>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">飯別</label>
+              <select x-model="clientForm.singleBento.riceType"
+                class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+                <option value="">請選擇飯別</option>
+                <template x-for="type in riceTypeOptions" :key="type">
+                  <option :value="type" x-text="type"></option>
+                </template>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">飯量調整</label>
+              <select x-model="clientForm.singleBento.rice" :disabled="!clientForm.singleBento.riceType"
+                :class="!clientForm.singleBento.riceType ? 'opacity-70 cursor-not-allowed' : ''"
+                class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+                <option value="正常">正常</option>
+                <option value="少飯">少飯</option>
+                <option value="半飯">半飯</option>
+                <option value="不飯菜多">不飯菜多</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">精選項目（最多顯示 5 項）</label>
+            <select x-model="clientForm.singleBento.mainDish"
+              class="w-full glass-input text-green-700 font-bold rounded-xl px-3 py-2.5 text-sm focus:outline-none">
+              <template x-if="getAvailableDishesForPrice(clientForm.singleBento).length === 0">
+                <option disabled>目前尚無精選主菜，請管理員上架</option>
+              </template>
+              <template x-for="dish in getAvailableDishesForPrice(clientForm.singleBento)" :key="dish.id">
+                <option :value="dish.name" x-text="dish.name + ' · ' + dish.vegType"></option>
+              </template>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-3 bg-green-900/[0.02] p-4 rounded-xl border border-green-500/10">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">忌口菜色</label>
+          <div class="flex flex-wrap gap-2">
+            <template x-for="opt in dislikesOptions" :key="opt">
+              <button type="button" @click="toggleDislikeInRow(clientForm.singleBento, opt)"
+                :class="clientForm.singleBento.dislikes.includes(opt) ? 'bg-rose-500/10 text-rose-700 border-rose-300 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'"
+                class="px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all">
+                <span x-text="'✖ ' + opt"></span>
+              </button>
+            </template>
+          </div>
+          <div class="pt-1">
+            <input type="text" x-model="clientForm.singleBento.otherDislike" placeholder="其餘客製化忌口或特別交代，請在此補充備註..."
+              class="w-full glass-input rounded-xl px-3 py-2 text-xs font-medium focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <div x-show="clientForm.isCustomized" x-transition.opacity class="glass-panel p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between border-b border-green-900/5 pb-4 gap-3">
+          <div class="flex items-center gap-3">
+            <span class="text-lg p-2 bg-amber-500/10 text-amber-700 rounded-xl font-bold">👥</span>
+            <div>
+              <h2 class="font-bold text-base text-slate-900">成員專屬客製化清單</h2>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">每位同仁可自由決定餐盒價位、飯量、主菜與忌口</p>
+            </div>
+          </div>
+          <button type="button" @click="addCustomBentoRow()"
+            class="glass-btn-primary text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5">
+            <i class="fa-solid fa-user-plus"></i><span>新增一位同仁</span>
+          </button>
+        </div>
+
+        <div class="space-y-4 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+          <template x-for="(row, index) in clientForm.customBentos" :key="index">
+            <div class="p-4 rounded-2xl border border-slate-200 bg-white/50 space-y-3 relative">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-black flex items-center justify-center font-mono"
+                    x-text="index+1"></span>
+                  <input type="text" x-model="row.name" placeholder="同仁稱呼 / 姓名"
+                    class="w-36 glass-input rounded-xl px-2.5 py-1 text-xs font-bold focus:outline-none">
+                </div>
+                <button type="button" @click="removeCustomBentoRow(index)" x-show="clientForm.customBentos.length > 1"
+                  class="glass-btn-danger text-white px-2 py-1 rounded-lg text-[11px] font-bold">
+                  <i class="fa-solid fa-trash-can mr-1"></i>移除
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">價位預算</label>
+                  <select x-model="row.price" @change="filterMainDishes(row)"
+                    class="w-full glass-input rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none">
+                    <option value="70">NT$ 70</option>
+                    <option value="80">NT$ 80</option>
+                    <option value="90">NT$ 90</option>
+                    <option value="100">NT$ 100</option>
+                    <option value="other">其他金額</option>
+                  </select>
+                  <template x-if="row.price === 'other'">
+                    <input type="number" x-model="row.otherPrice" @input="filterMainDishes(row)" placeholder="自訂價錢"
+                      class="w-full mt-1.5 glass-input rounded-xl px-2 py-1 text-[11px] font-bold focus:outline-none text-center">
+                  </template>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">素食選別</label>
+                  <select x-model="row.vegType" @change="filterMainDishes(row)"
+                    class="w-full glass-input rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none">
+                    <template x-for="type in vegTypeOptions" :key="type">
+                      <option :value="type" x-text="type"></option>
+                    </template>
+                  </select>
+                </div>
+
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">飯別</label>
+                    <select x-model="row.riceType"
+                      class="w-full glass-input rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none">
+                      <option value="">請選擇飯別</option>
+                      <template x-for="type in riceTypeOptions" :key="type">
+                        <option :value="type" x-text="type"></option>
+                      </template>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">飯量調整</label>
+                    <select x-model="row.rice" :disabled="!row.riceType"
+                      :class="!row.riceType ? 'opacity-70 cursor-not-allowed' : ''"
+                      class="w-full glass-input rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none">
+                      <option value="正常">正常飯</option>
+                      <option value="少飯">健康少飯</option>
+                      <option value="半飯">纖體半飯</option>
+                      <option value="不飯菜多">不飯菜多</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">精選主菜</label>
+                  <select x-model="row.mainDish"
+                    class="w-full glass-input text-green-700 font-bold rounded-xl px-2 py-1.5 text-xs focus:outline-none">
+                    <template x-for="dish in getAvailableDishesForPrice(row)" :key="dish.id">
+                      <option :value="dish.name" x-text="dish.name + ' · ' + dish.vegType"></option>
+                    </template>
+                  </select>
+                </div>
+              </div>
+
+              <div class="space-y-1.5 pt-1 border-t border-dashed border-slate-200">
+                <span class="block text-[10px] font-bold text-slate-400">忌口項目</span>
+                <div class="flex flex-wrap gap-1">
+                  <template x-for="opt in dislikesOptions" :key="opt">
+                    <button type="button" @click="toggleDislikeInRow(row, opt)"
+                      :class="row.dislikes.includes(opt) ? 'bg-rose-500/10 text-rose-700 border-rose-200' : 'bg-white text-slate-400 border-slate-200'"
+                      class="px-2 py-0.5 text-[10px] font-bold rounded-lg border transition-all">
+                      <span x-text="opt"></span>
+                    </button>
+                  </template>
+                </div>
+                <input type="text" x-model="row.otherDislike" placeholder="補充此便當特別指定備註..."
+                  class="w-full glass-input rounded-lg px-2 py-1 text-[11px] focus:outline-none mt-1">
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="glass-panel p-6 space-y-5 bg-white/60">
+        <div class="flex items-center justify-between border-b border-green-900/5 pb-4">
+          <div class="flex items-center gap-3">
+            <span class="text-lg p-2 bg-green-500/10 text-green-600 rounded-xl font-bold">🛒</span>
+            <div>
+              <h2 class="font-bold text-base text-slate-900">發送訂單</h2>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">系統自動彙整項目，確認無誤後點擊送出</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3 bg-white/40 p-4 rounded-2xl border border-slate-100">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">餐點送達時間段</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" @click="clientForm.deliveryTimeType = 'ASAP'"
+                :class="clientForm.deliveryTimeType === 'ASAP' ? 'border-green-500 bg-green-500/10 text-green-700 font-bold' : 'border-slate-200 bg-white/80 text-slate-600'"
+                class="px-3 py-2 text-xs rounded-xl border text-center transition-all shadow-xs"> 儘速送達</button>
+              <button type="button" @click="clientForm.deliveryTimeType = 'SPECIFIC'"
+                :class="clientForm.deliveryTimeType === 'SPECIFIC' ? 'border-green-500 bg-green-500/10 text-green-700 font-bold' : 'border-slate-200 bg-white/80 text-slate-600'"
+                class="px-3 py-2 text-xs rounded-xl border text-center transition-all shadow-xs"> 指定特定時間</button>
+            </div>
+            <template x-if="clientForm.deliveryTimeType === 'SPECIFIC'">
+              <input type="time" x-model="clientForm.deliveryTimeValue"
+                class="w-full mt-2 glass-input rounded-xl px-3 py-2 text-xs font-bold focus:outline-none text-center">
+            </template>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">總備註說明</label>
+            <textarea x-model="clientForm.globalNote" rows="2" placeholder="如：全部外送外盒請綁紅線、或需附收據發票等..."
+              class="w-full glass-input rounded-xl px-3 py-2 text-xs font-medium focus:outline-none resize-none"></textarea>
+          </div>
+        </div>
+
+        <div
+          class="p-5 rounded-2xl bg-gradient-to-br from-green-500/50 to-emerald-550 text-white space-y-4 shadow-xl relative overflow-hidden">
+          <div
+            class="absolute -right-6 -bottom-6 text-white/[0.04] text-8xl font-black select-none pointer-events-none"><i
+              class="fa-solid fa-receipt"></i></div>
+
+          <div class="flex items-center justify-between border-b border-white/10 pb-3">
+            <span class="text-xs text-green-900 font-bold tracking-wider">總計</span>
+            <span
+              class="text-[10px] bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full font-mono font-bold text-emerald-900"
+              x-text="clientForm.needTableware ? '含免費免洗餐具' : '不需餐具 · 環保減塑'"></span>
+          </div>
+
+          <div class="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-1">
+            <template x-for="(item, i) in getOrderSummaryItems()" :key="i">
+              <div class="flex justify-between items-center text-xs font-medium text-green-900">
+                <span x-text="item.label"></span>
+                <span class="font-mono text-green-900 font-bold" x-text="item.val"></span>
+              </div>
+            </template>
+          </div>
+
+          <div class="pt-3 border-t border-white/10 flex justify-between items-baseline">
+            <span class="text-sm font-bold text-green-900">應付新台幣金額</span>
+            <div class="text-right">
+              <span class="text-xs font-bold text-slate-900 mr-1">NT$</span>
+              <span class="text-3xl font-black tracking-tight text-green-900" x-text="calculateTotal()">0</span>
+            </div>
+          </div>
+        </div>
+
+        <button @click="submitOrder()"
+          class="glass-btn-primary text-white py-3.5 px-6 rounded-xl font-black text-sm flex items-center justify-center space-x-2 w-full shadow-lg">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>確認訂單</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <div x-show="showHistoryModal"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
+    x-cloak>
+    <div class="liquid-glass-modal rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+        <h3 class="font-black text-slate-900 text-base flex items-center gap-2">
+          <span> 您的歷史訂購紀錄</span>
+          <span class="text-xs font-medium text-slate-500">(僅儲存最近 20 筆)</span>
+        </h3>
+        <button @click="closeHistory()" class="text-slate-400 hover:text-slate-700 text-lg p-1"><i
+            class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+        <template x-if="userHistory.length === 0">
+          <div class="text-center py-12 text-slate-400 space-y-2">
+            <div class="text-3xl">📭</div>
+            <p class="text-xs font-medium">您在此瀏覽器尚無任何點餐歷史紀錄</p>
+          </div>
+        </template>
+
+        <template x-for="order in userHistory" :key="order.id">
+          <div class="p-4 rounded-2xl bg-white/60 border border-slate-200/60 text-xs space-y-2">
+            <div class="flex justify-between items-center font-bold">
+              <span class="text-slate-900 font-mono text-sm" x-text="order.id"></span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] bg-green-100 text-green-800"
+                x-text="order.status"></span>
+            </div>
+            <div class="text-slate-500 grid grid-cols-2 gap-1 font-medium">
+              <p>訂購單位：<span class="text-slate-800" x-text="order.unit"></span></p>
+              <p>主要負責人：<span class="text-slate-800" x-text="order.userName"></span></p>
+              <p>發送時間：<span class="text-slate-800 font-mono" x-text="order.timestamp"></span></p>
+              <p>指定送達：<span class="text-slate-800" x-text="order.deliveryTime || '儘速送達'"></span></p>
+            </div>
+            <div class="bg-white/40 p-2 rounded-xl border border-slate-100 space-y-1">
+              <template x-for="(it, idx) in order.items" :key="idx">
+                <div class="flex justify-between text-slate-600">
+                  <span x-text="it.summary"></span>
+                  <span class="font-mono font-bold text-slate-900" x-text="'x'+it.count"></span>
+                </div>
+              </template>
+            </div>
+            <div class="text-right font-bold text-slate-900 pt-1">
+              總計金額：<span class="text-green-600 font-mono text-sm" x-text="'NT$ ' + order.totalAmount"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="pt-2 border-t border-slate-200 flex justify-end">
+        <button @click="closeHistory()"
+          class="glass-btn text-slate-700 px-4 py-2 rounded-xl text-xs font-bold">關閉視窗</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="mt-auto border-t border-slate-200/50 bg-white/20 py-4 text-center text-xs font-medium text-slate-500">
+    VegeBento Go! 智慧蔬食體系 © 2026 研發部技術支援
+  </footer>
+
+  <script>
+    function bentoApp() {
+      return {
+        activeTab: 'client',
+        showHistoryModal: false,
+        dislikesOptions: ['咖哩', '茄子', '炸物', '素料', '青椒', '豆子', '苦瓜', '皇宮菜'],
+        vegTypeOptions: ['全素', '蛋奶素', '奶素'],
+        riceTypeOptions: ['紫米飯', '白飯'],
+
+        // 全域共用資料池
+        orders: [],
+        userHistory: [],
+        mainDishes: [],
+
+        toast: { show: false, message: '', type: 'success' },
+
+        currentSlideIndex: 0,
+        photoSlides: [
+          { src: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80', label: '本週新品上架，歡迎試吃' },
+          { src: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=1200&q=80', label: '營養師推薦：季節蔬食套餐' },
+          { src: 'https://images.unsplash.com/photo-1504674900247-1c74a34ca0a4?auto=format&fit=crop&w=1200&q=80', label: '外送服務提醒：請於 12:00 前完成訂單' }
+        ],
+        announcements: [
+          { title: '系統更新', body: '週一凌晨 2 點進行維護，可能造成短暫無法訂餐。' },
+          { title: '節日促銷', body: '端午節期間，凡訂單滿 20 份享「紫米飯升級」優惠。' },
+          { title: '新增菜單', body: '本季加入多款全素新主菜，請至精選項目查看。' }
+        ],
+        clientForm: {
+          unit: '',
+          userName: '',
+          vegType: '全素',
+          needTableware: false,
+          isCustomized: false,
+          deliveryTimeType: 'ASAP',
+          deliveryTimeValue: '12:00',
+          globalNote: '',
+          singleBento: { price: '80', otherPrice: '', vegType: '全素', riceType: '', rice: '正常', mainDish: '', dislikes: [], otherDislike: '', quantity: 1 },
+          customBentos: [
+            { name: '同仁 1', price: '80', otherPrice: '', vegType: '全素', riceType: '', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' }
+          ]
+        },
+
+        async init() {
+          await this.loadDataFromStorage();
+          this.autoSelectFirstAvailableDish();
+          if (this.photoSlides && this.photoSlides.length > 1) {
+            setInterval(() => {
+              this.currentSlideIndex = (this.currentSlideIndex + 1) % this.photoSlides.length;
+            }, 5000);
+          }
+        },
+
+        async loadDataFromStorage() {
+          // 透過 DB Helper 從 Supabase (或自動降級的 LocalStorage) 撈取資料
+          const dishes = await VegeBentoDB.getDishes();
+          this.mainDishes = dishes.map(dish => {
+            const normalized = {
+              ...dish,
+              vegType: dish.vegType || '全素'
+            };
+            if (!normalized.priceType && normalized.priceRange) {
+              normalized.priceType = normalized.priceRange === 'all' ? 'all' : 'range';
+              normalized.specificPrice = normalized.priceRange === 'all' ? '' : (String(normalized.priceRange).match(/\d+/) || [''])[0];
+              delete normalized.priceRange;
+            }
+            if (!normalized.priceType) {
+              normalized.priceType = 'all';
+              normalized.specificPrice = '';
+            }
+            return normalized;
+          });
+
+          const slides = await VegeBentoDB.getPhotoSlides();
+          if (slides && slides.length > 0) {
+            this.photoSlides = slides;
+          }
+
+          const anns = await VegeBentoDB.getAnnouncements();
+          if (anns && anns.length > 0) {
+            this.announcements = anns;
+          }
+
+          const dbOrders = await VegeBentoDB.getOrders();
+          this.orders = dbOrders;
+
+          const personalHistory = localStorage.getItem('vege_bento_user_history');
+          this.userHistory = personalHistory ? JSON.parse(personalHistory) : [];
+        },
+
+        isDishCompatibleWithVegType(dish, selectedType) {
+          const priority = { '全素': 0, '奶素': 1, '蛋奶素': 2 };
+          const dishPriority = priority[dish.vegType] ?? 0;
+          const selectedPriority = priority[selectedType] ?? 0;
+          return dishPriority <= selectedPriority;
+        },
+
+        getAvailableDishesForPrice(bentoTarget) {
+          const targetPrice = bentoTarget.price === 'other' ? parseInt(bentoTarget.otherPrice || 0) : parseInt(bentoTarget.price);
+          return this.mainDishes.filter(dish => {
+            if (!dish.available) return false;
+            if (!this.isDishCompatibleWithVegType(dish, bentoTarget.vegType)) return false;
+            if (dish.priceType === 'all') return true;
+            if (dish.priceType === 'range') return targetPrice >= parseInt(dish.specificPrice || 0);
+            return false;
+          }).slice(0, 5);
+        },
+
+        autoSelectFirstAvailableDish() {
+          // 團體單
+          const singleAvailable = this.getAvailableDishesForPrice(this.clientForm.singleBento);
+          if (singleAvailable.length > 0) this.clientForm.singleBento.mainDish = singleAvailable[0].name;
+
+          // 客製單
+          this.clientForm.customBentos.forEach(row => {
+            const rowAvailable = this.getAvailableDishesForPrice(row);
+            if (rowAvailable.length > 0 && !row.mainDish) row.mainDish = rowAvailable[0].name;
+          });
+        },
+
+        filterMainDishes(bentoTarget) {
+          const available = this.getAvailableDishesForPrice(bentoTarget);
+          bentoTarget.mainDish = available.length > 0 ? available[0].name : '無可供應主菜';
+        },
+
+        openHistory() {
+          this.activeTab = 'history';
+          this.showHistoryModal = true;
+        },
+
+        closeHistory() {
+          this.showHistoryModal = false;
+          this.activeTab = 'client';
+        },
+
+        toggleCustomization() {
+          this.clientForm.isCustomized = !this.clientForm.isCustomized;
+          this.autoSelectFirstAvailableDish();
+        },
+
+        addCustomBentoRow() {
+          const nextIndex = this.clientForm.customBentos.length + 1;
+          const newRow = { name: `同仁 ${nextIndex}`, price: '80', otherPrice: '', vegType: '全素', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' };
+          this.clientForm.customBentos.push(newRow);
+          this.filterMainDishes(newRow);
+        },
+
+        removeCustomBentoRow(index) {
+          if (this.clientForm.customBentos.length > 1) {
+            this.clientForm.customBentos.splice(index, 1);
+          }
+        },
+
+        toggleDislikeInRow(row, opt) {
+          if (row.dislikes.includes(opt)) {
+            row.dislikes = row.dislikes.filter(d => d !== opt);
+          } else {
+            row.dislikes.push(opt);
+          }
+        },
+
+        calculateTotal() {
+          if (!this.clientForm.isCustomized) {
+            const price = this.clientForm.singleBento.price === 'other' ? parseInt(this.clientForm.singleBento.otherPrice || 0) : parseInt(this.clientForm.singleBento.price);
+            return price * (this.clientForm.singleBento.quantity || 1);
+          } else {
+            return this.clientForm.customBentos.reduce((sum, row) => {
+              const price = row.price === 'other' ? parseInt(row.otherPrice || 0) : parseInt(row.price);
+              return sum + price;
+            }, 0);
+          }
+        },
+
+        getOrderSummaryItems() {
+          if (!this.clientForm.isCustomized) {
+            const p = this.clientForm.singleBento.price === 'other' ? this.clientForm.singleBento.otherPrice : this.clientForm.singleBento.price;
+            return [
+              { label: `素食選別`, val: this.clientForm.singleBento.vegType },
+              { label: `飯別`, val: this.clientForm.singleBento.riceType || '未選擇' },
+              { label: `飯量`, val: this.clientForm.singleBento.rice },
+              { label: `NT$ ${p} 單一規格餐盒`, val: `${this.clientForm.singleBento.quantity || 1} 個` }
+            ];
+          } else {
+            // 分組彙整
+            const summaryMap = {};
+            this.clientForm.customBentos.forEach(row => {
+              const p = row.price === 'other' ? row.otherPrice : row.price;
+              const key = `NT$ ${p} 客製化餐盒`;
+              summaryMap[key] = (summaryMap[key] || 0) + 1;
+            });
+            return [
+              { label: '素食選別', val: this.clientForm.vegType },
+              ...Object.keys(summaryMap).map(k => ({ label: k, val: `${summaryMap[k]} 個` }))
+            ];
+          }
+        },
+
+        async submitOrder() {
+          if (!this.clientForm.unit.trim() || !this.clientForm.userName.trim()) {
+            this.showToast('請務必填寫「訂購單位」與「主要訂購人姓名」！', 'danger');
+            return;
+          }
+          if (!this.clientForm.singleBento.riceType && !this.clientForm.isCustomized) {
+            this.showToast('請先選擇飯別，再選擇飯量。', 'danger');
+            return;
+          }
+          if (this.clientForm.isCustomized) {
+            const invalidRow = this.clientForm.customBentos.find(row => !row.riceType);
+            if (invalidRow) {
+              this.showToast('請為每位同仁選擇飯別後再送出訂單。', 'danger');
+              return;
+            }
+          }
+
+          let items = [];
+          if (!this.clientForm.isCustomized) {
+            const priceVal = this.clientForm.singleBento.price === 'other' ? this.clientForm.singleBento.otherPrice : this.clientForm.singleBento.price;
+            let disStr = this.clientForm.singleBento.dislikes.join(',') + (this.clientForm.singleBento.otherDislike ? ' ' + this.clientForm.singleBento.otherDislike : '');
+            items.push({
+              summary: `[統一單] ${this.clientForm.singleBento.vegType} | NT$${priceVal} | 主菜: ${this.clientForm.singleBento.mainDish} | 飯別: ${this.clientForm.singleBento.riceType} | 飯量: ${this.clientForm.singleBento.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
+              count: this.clientForm.singleBento.quantity
+            });
+          } else {
+            this.clientForm.customBentos.forEach(row => {
+              const priceVal = row.price === 'other' ? row.otherPrice : row.price;
+              let disStr = row.dislikes.join(',') + (row.otherDislike ? ' ' + row.otherDislike : '');
+              items.push({
+                summary: `[${row.name}] ${row.vegType} | NT$${priceVal} | 主菜: ${row.mainDish} | 飯別: ${row.riceType} | 飯量: ${row.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
+                count: 1
+              });
+            });
+          }
+
+          const finalDeliveryTime = this.clientForm.deliveryTimeType === 'SPECIFIC' ? this.clientForm.deliveryTimeValue : '儘速送達';
+          const orderId = 'VEG-' + Math.floor(1000 + Math.random() * 9000);
+          const timeNow = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+          const newOrder = {
+            id: orderId,
+            unit: this.clientForm.unit,
+            userName: this.clientForm.userName,
+            timestamp: timeNow,
+            isCustomized: this.clientForm.isCustomized,
+            needTableware: this.clientForm.needTableware,
+            items: items,
+            totalAmount: this.calculateTotal(),
+            status: '未接單',
+            deliveryTime: finalDeliveryTime,
+            note: this.clientForm.globalNote.trim()
+          };
+
+          // 儲存至資料庫與全域狀態
+          await VegeBentoDB.saveOrder(newOrder);
+          
+          this.orders.unshift(newOrder);
+          this.userHistory.unshift(newOrder);
+          localStorage.setItem('vege_bento_user_history', JSON.stringify(this.userHistory));
+
+          this.showToast('素食餐盒訂單發送成功！已同步至雲端資料庫。', 'success');
+
+          // 表單初始化重置
+          this.clientForm.globalNote = '';
+          this.clientForm.singleBento.quantity = 1;
+          this.clientForm.customBentos = [{ name: '同仁 1', price: '80', otherPrice: '', vegType: '全素', riceType: '', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' }];
+          this.autoSelectFirstAvailableDish();
+        },
+
+        showToast(msg, type = 'success') {
+          this.toast.message = msg;
+          this.toast.type = type;
+          this.toast.show = true;
+          setTimeout(() => { this.toast.show = false; }, 3500);
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>

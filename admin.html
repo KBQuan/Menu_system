@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VegeBento Go! 後台管理系統</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: 'rgba(240, 253, 244, 0.6)',
+              100: 'rgba(220, 252, 231, 0.7)',
+              200: 'rgba(187, 247, 208, 0.8)',
+              500: '#16a34a',
+              600: '#15803d',
+              700: '#166534',
+            },
+            fresh: {
+              50: 'rgba(236, 253, 245, 0.6)',
+              500: '#059669',
+              600: '#047857',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/db.js"></script>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body 
+  class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-cover bg-center bg-fixed"
+  style="background-image: url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=2000&auto=format&fit=crop');"
+  x-data="bentoAdminApp()" x-init="init()">
+  <header class="border-b border-white/20 bg-white/55 backdrop-blur-md shadow-sm sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        <div @click="goToClient()" class="flex items-center space-x-3 cursor-pointer group select-none" title="返回前台點餐">
+          <div class="bg-gradient-to-tr from-brand-500 to-green-700 text-white p-2.5 rounded-2xl shadow-md group-hover:scale-105 transition-all">
+            <i class="fa-solid fa-sliders text-xl"></i>
+          </div>
+          <div>
+            <span class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-brand-700 to-green-800 bg-clip-text text-transparent">VegeBento Go!</span>
+            <span class="text-xs block text-emerald-800/80 font-bold">後台管理系統</span>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          <button @click="goToClient()" class="glass-btn text-slate-700 px-3.5 py-2 rounded-xl text-sm font-bold flex items-center space-x-2">
+            <i class="fa-solid fa-shop text-brand-600"></i><span>返回前台點餐</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+    
+    <div x-show="toast.show" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-2" class="fixed bottom-5 right-5 z-50 glass-panel-dark text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-3 text-sm" style="display: none;">
+      <i :class="toast.type === 'success' ? 'fa-solid fa-circle-check text-green-400' : 'fa-solid fa-circle-exclamation text-yellow-400'"></i>
+      <span x-text="toast.message"></span>
+    </div>
+
+    <div x-show="confirmModal.show" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" x-cloak>
+      <div class="glass-panel rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+        <h4 class="text-lg font-bold text-slate-900" x-text="confirmModal.title">確認操作</h4>
+        <p class="text-sm text-slate-600" x-text="confirmModal.message"></p>
+        <div class="flex justify-end space-x-3">
+          <button @click="confirmModal.show = false" class="px-4 py-2 glass-btn text-slate-700 rounded-xl text-sm font-bold">取消</button>
+          <button @click="executeConfirmedAction()" class="px-4 py-2 glass-btn-danger text-white rounded-xl text-sm font-bold">確認</button>
+        </div>
+      </div>
+    </div>
+
+    <div x-show="!isAdminAuthenticated" class="max-w-md mx-auto my-12" x-cloak>
+      <div class="glass-panel rounded-3xl p-8 space-y-6 shadow-xl">
+        <div class="text-center space-y-2">
+          <div class="inline-flex bg-gradient-to-tr from-brand-500 to-green-700 text-white p-4 rounded-2xl shadow-md"><i class="fa-solid fa-lock text-2xl"></i></div>
+          <h3 class="text-xl font-black text-slate-900">管理者登入</h3>
+          <p class="text-xs text-slate-600 font-medium">請輸入管理者憑證以進入後台管理系統</p>
+        </div>
+        <form @submit.prevent="login()" class="space-y-4">
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-700">管理員帳號</label>
+            <div class="relative rounded-xl">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-user text-slate-500 text-xs"></i></div>
+              <input type="text" x-model="loginUsername" placeholder="請輸入帳號" required class="block w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+            </div>
+          </div>
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-700">管理員密碼</label>
+            <div class="relative rounded-xl">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-key text-slate-500 text-xs"></i></div>
+              <input type="password" x-model="loginPassword" placeholder="請輸入密碼" required class="block w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+            </div>
+          </div>
+          <div x-show="loginError" class="text-red-600 text-xs font-bold text-center" x-text="loginError" x-transition></div>
+          <button type="submit" class="w-full glass-btn-primary text-white py-3 px-4 rounded-xl font-black text-xs">
+            <i class="fa-solid fa-right-to-bracket"></i><span>安全登入</span>
+          </button>
+        </form>
+        <div class="border-t border-white/40 pt-4 text-center flex flex-col items-center space-y-2">
+          <span class="text-[10px] text-slate-700 bg-white/40 px-2.5 py-1 rounded-md font-extrabold border border-white/50">測試用預設帳密：<span class="font-black text-brand-800">123456789</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div x-show="isAdminAuthenticated" class="space-y-6" x-cloak>
+      <div class="glass-panel rounded-3xl p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-md">
+        <div>
+          <h2 class="text-xl font-black text-slate-900 flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check text-brand-600 animate-pulse"></i>
+            <span>控制台主面板</span>
+          </h2>
+          <p class="text-xs text-slate-600 font-medium mt-0.5">即時控管顧客餐盒訂單狀態、廚房精設備料統計與前台主菜菜單更新。</p>
+        </div>
+        <div class="flex items-center space-x-2 w-full sm:w-auto">
+          <button @click="goToClient()" class="glass-btn text-slate-800 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 flex-grow sm:flex-grow-0 justify-center">
+            <i class="fa-solid fa-circle-arrow-left"></i><span>返回前台</span>
+          </button>
+          <button @click="logout()" class="glass-btn-danger text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 flex-grow sm:flex-grow-0 justify-center">
+            <i class="fa-solid fa-power-off"></i><span>安全登出</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="border-b border-white/40">
+        <nav class="flex flex-wrap gap-4">
+          <button @click="adminTab = 'orders'" :class="adminTab === 'orders' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'" class="pb-3 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
+            <i class="fa-solid fa-bowl-food"></i><span>今日訂單與備料統計</span>
+          </button>
+          <button @click="adminTab = 'dishes'" :class="adminTab === 'dishes' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'" class="pb-3 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
+            <i class="fa-solid fa-utensils"></i><span>每日素食主菜管理</span>
+          </button>
+          <button @click="adminTab = 'allOrders'" :class="adminTab === 'allOrders' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'" class="pb-3 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
+            <i class="fa-solid fa-magnifying-glass"></i><span>全部訂單查詢</span>
+          </button>
+          <button @click="adminTab = 'content'" :class="adminTab === 'content' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'" class="pb-3 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
+            <i class="fa-solid fa-image"></i><span>照片與公告管理</span>
+          </button>
+        </nav>
+      </div>
+
+      <div x-show="adminTab === 'orders'" class="grid grid-cols-1 lg:grid-cols-12 gap-8" x-transition>
+        <div class="lg:col-span-4 space-y-6">
+          <div class="glass-panel rounded-3xl p-5 space-y-4">
+            <h4 class="text-sm font-black text-slate-900 tracking-wider uppercase border-b border-white/40 pb-2">今日廚房總備料匯總看板</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-white/50 border border-white/70 p-3 rounded-2xl text-center">
+                <span class="text-[10px] block font-bold text-slate-600">總點餐盒數</span>
+                <span class="text-2xl font-black text-brand-700" x-text="getTotalBentoCount()">0</span>
+              </div>
+              <div class="bg-white/50 border border-white/70 p-3 rounded-2xl text-center">
+                <span class="text-[10px] block font-bold text-slate-600">免洗餐具總需求</span>
+                <span class="text-2xl font-black text-amber-700" x-text="getTotalTablewareCount()">0</span>
+              </div>
+            </div>
+            <div class="bg-emerald-900/90 backdrop-blur-md p-4 rounded-2xl space-y-2 border border-white/10 text-white">
+              <span class="text-xs text-emerald-300 font-bold block"><i class="fa-solid fa-kitchen-set mr-1"></i>今日主菜備料清單：</span>
+              <div class="divide-y divide-emerald-800/50">
+                <template x-for="(qty, dish) in aggregateKitchenMainDishes()">
+                  <div class="flex justify-between py-1.5 text-xs font-semibold">
+                    <span x-text="dish"></span><span class="text-yellow-300 font-black" x-text="qty + ' 份'"></span>
+                  </div>
+                </template>
+              </div>
+              <div x-show="Object.keys(aggregateKitchenMainDishes()).length === 0" class="text-xs text-emerald-400/60 italic text-center py-2">目前尚無訂單資料</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-8 space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="text-base font-black text-slate-900 flex items-center space-x-1.5">
+              <i class="fa-solid fa-list-check text-brand-600"></i>
+              <span>即時顧客點餐看板明細</span>
+            </h3>
+            <button x-show="orders.length > 0" @click="triggerClearAllOrders()" class="text-xs text-red-600 hover:text-red-700 font-bold flex items-center space-x-1">
+              <i class="fa-regular fa-trash-can"></i><span>清空與重置今日全部訂單</span>
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <template x-for="order in orders" :key="order.id">
+              <div class="glass-panel rounded-3xl overflow-hidden shadow-sm border border-white/50 transition-all">
+                <div class="p-4 bg-white/40 border-b border-white/40 flex flex-wrap justify-between items-center gap-2">
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs bg-brand-600 text-white font-black px-2 py-0.5 rounded-md" x-text="order.id"></span>
+                    <h4 class="text-sm font-black text-slate-800" x-text="order.unit"></h4>
+                    <span class="text-xs text-slate-500 font-medium" x-text="'(聯絡人: ' + order.userName + ')'"></span>
+                  </div>
+                  <div class="flex items-center space-x-3">
+                    <span class="text-[11px] text-slate-600 font-bold" x-text="'下單: ' + order.timestamp"></span>
+                    <select x-model="order.status" @change="updateOrderStatus(order)" :class="{ 'bg-red-500/20 text-red-900 border-red-500/20': order.status === '未接單', 'bg-yellow-500/20 text-yellow-900 border-yellow-500/20': order.status === '已接單', 'bg-blue-500/20 text-blue-900 border-blue-500/20': order.status === '製作中', 'bg-green-500/20 text-green-900 border-green-500/20': order.status === '已送出' }" class="text-xs font-extrabold rounded-lg px-2.5 py-1 border focus:outline-none transition-all cursor-pointer bg-white/40">
+                      <option value="未接單">未接單</option>
+                      <option value="已接單">已接單</option>
+                      <option value="製作中">製作中</option>
+                      <option value="已送出">已送出</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="px-4 py-2.5 bg-brand-50/40 border-b border-white/20 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                  <div class="flex items-center space-x-1.5 text-brand-800 font-bold">
+                    <i class="fa-regular fa-clock text-brand-600"></i>
+                    <span>指定送達時間：</span>
+                    <span class="bg-white/80 px-2 py-0.5 rounded border border-brand-200" x-text="order.deliveryTime || '未註明'"></span>
+                  </div>
+                  <div class="flex items-center space-x-1.5 text-slate-700 font-medium">
+                    <i class="fa-solid fa-location-dot text-brand-600"></i>
+                    <span>外送配送地址：</span>
+                    <span class="text-slate-900 font-bold truncate" :title="order.deliveryAddress" x-text="order.deliveryAddress || '未註明'"></span>
+                  </div>
+                </div>
+
+                <div class="p-4 bg-white/20 text-xs space-y-3">
+                  <div class="flex justify-between items-center text-slate-700 border-b border-white/40 pb-2 font-bold">
+                    <span class="flex items-center space-x-1"><i class="fa-solid fa-utensils"></i><span x-text="order.needTableware ? '本訂單【需要】免洗餐具' : '本單【不需要】免洗餐具 (自備環保)'"></span></span>
+                    <span class="font-extrabold text-slate-900" x-text="'共 ' + order.items.length + ' 份素便當'"></span>
+                  </div>
+                  <div class="divide-y divide-white/20">
+                    <template x-for="(item, idx) in order.items">
+                      <div class="py-2.5 flex flex-wrap justify-between items-start gap-2">
+                        <div class="space-y-0.5">
+                          <span class="font-bold text-slate-900 text-xs" x-text="(idx+1) + '. ' + item.name"></span>
+                          <span class="ml-2 bg-emerald-600/10 text-emerald-800 font-black px-1.5 py-0.5 rounded text-[11px]" x-text="item.mainDish"></span>
+                          <span class="ml-1 text-slate-500" x-text="'(飯量: ' + item.rice + ')'"></span>
+                          <div x-show="item.dislikes.length > 0 || item.otherDislike" class="mt-1 flex flex-wrap gap-1">
+                            <template x-for="d in item.dislikes"><span class="bg-red-500/10 text-red-700 border border-red-500/20 rounded px-1 text-[10px] font-bold" x-text="'不要'+d"></span></template>
+                            <span x-show="item.otherDislike" class="bg-red-500/10 text-red-700 border border-red-500/20 rounded px-1 text-[10px] font-bold" x-text="item.otherDislike"></span>
+                          </div>
+                        </div>
+                        <span class="font-bold text-slate-900" x-text="'$' + item.price"></span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+                <div class="p-3 bg-white/30 border-t border-white/40 flex justify-between items-center text-xs font-bold text-slate-800">
+                  <span>付款方式：現金 / 劃帳</span>
+                  <span class="text-sm font-black text-brand-800">總計金額：$<span x-text="order.totalAmount"></span> 元</span>
+                </div>
+              </div>
+            </template>
+            <template x-if="orders.length === 0">
+              <div class="text-center py-16 glass-panel rounded-3xl text-slate-500 space-y-2">
+                <i class="fa-solid fa-inbox text-5xl opacity-40 block"></i>
+                <p class="font-bold text-sm">目前無任何今日點餐進件紀錄</p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div x-show="adminTab === 'dishes'" class="grid grid-cols-1 lg:grid-cols-12 gap-8" x-transition>
+        <div class="lg:col-span-5">
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center space-x-1.5">
+              <i class="fa-solid fa-pen-to-square text-brand-500"></i>
+              <span x-text="editingDish.id ? '編輯現有主菜項目' : '新增今日主菜上架'"></span>
+            </h4>
+            <p class="text-xs text-slate-500">此處新增的主菜會同步成為前台 Index 精選項目，管理員可設定供應狀態與適用價格。</p>
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">主菜名稱</label>
+                <input type="text" x-model="editingDish.name" placeholder="例如：御品蒲燒鰻 (素)" class="w-full px-3 py-2 rounded-xl glass-input font-bold">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">主菜類別</label>
+                <select x-model="editingDish.vegType" class="w-full px-3 py-2 rounded-xl glass-input font-semibold">
+                  <option value="全素">全素</option>
+                  <option value="蛋奶素">蛋奶素</option>
+                  <option value="奶素">奶素</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">適用預算門檻規則</label>
+                <select x-model="editingDish.priceType" class="w-full px-3 py-2 rounded-xl glass-input font-semibold">
+                  <option value="all">所有預算級距皆可用</option>
+                  <option value="range">指定價格可用</option>
+                </select>
+              </div>
+              <div x-show="editingDish.priceType === 'range'" class="space-y-1" x-transition>
+                <label class="block font-bold text-slate-700 mb-1">指定價格</label>
+                <input type="number" x-model="editingDish.specificPrice" placeholder="例如 80 或 90" class="w-full px-3 py-2 rounded-xl glass-input font-semibold">
+              </div>
+              <div class="flex items-center space-x-2 py-1">
+                <input type="checkbox" x-model="editingDish.available" class="h-4.5 w-4.5 text-brand-600 border-white/60 rounded bg-white/20">
+                <span class="text-slate-700 font-bold">是否立即上架啟用</span>
+              </div>
+              <div class="flex space-x-2 pt-2">
+                <button @click="saveMainDish()" class="flex-grow glass-btn-primary text-white font-black py-2.5 px-4 rounded-xl">儲存主菜項目</button>
+                <button x-show="editingDish.id" @click="resetEditingDish()" class="glass-btn text-slate-800 font-bold py-2.5 px-4 rounded-xl">取消</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7">
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center space-x-1.5">
+              <i class="fa-solid fa-clipboard-list text-brand-500"></i><span>今日供應主菜清單</span>
+            </h4>
+            <div class="divide-y divide-white/30">
+              <template x-for="dish in mainDishes" :key="dish.id">
+                <div class="py-3 flex justify-between items-center gap-2">
+                  <div class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-extrabold text-slate-900 text-sm" x-text="dish.name"></span>
+                      <span :class="dish.available ? 'bg-green-500/20 text-green-800 border-green-500/20' : 'bg-slate-500/20 text-slate-700 border-slate-500/20'" class="text-[10px] font-bold px-2 py-0.5 border rounded-md" x-text="dish.available ? '供應中' : '已下架'"></span>
+                      <span class="text-[10px] text-slate-500 px-2 py-0.5 rounded-full border border-slate-200" x-text="dish.vegType"></span>
+                    </div>
+                    <span class="text-xs text-slate-600 block font-medium" x-text="'預算限制: ' + getPriceRuleLabel(dish)"></span>
+                  </div>
+                  <div class="flex items-center space-x-1">
+                    <button @click="editDish(dish)" class="p-2 text-slate-700 hover:text-brand-700" title="編輯項目"><i class="fa-regular fa-pen-to-square"></i></button>
+                    <button @click="triggerDeleteDish(dish.id)" class="p-2 text-red-500 hover:text-red-700" title="刪除主菜"><i class="fa-regular fa-trash-can"></i></button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div x-show="adminTab === 'allOrders'" class="grid grid-cols-1 lg:grid-cols-12 gap-8" x-transition>
+        <div class="lg:col-span-12 space-y-6">
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
+                  <i class="fa-solid fa-magnifying-glass text-brand-600"></i><span>全部訂單查詢</span>
+                </h4>
+                <p class="text-xs text-slate-500">可快速查看所有訂單資訊並設定接單狀態。</p>
+              </div>
+              <div class="text-xs text-slate-500 font-bold">共有 <span x-text="filteredOrders.length"></span> 筆訂單</div>
+            </div>
+            <div class="grid grid-cols-1 gap-3">
+              <input type="text" x-model="orderQuery" placeholder="搜尋訂購單位或姓名" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" @click="orderStatusFilter = 'all'" :class="orderStatusFilter === 'all' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs">全部</button>
+                <button type="button" @click="orderStatusFilter = '未接單'" :class="orderStatusFilter === '未接單' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs">未接單</button>
+                <button type="button" @click="orderStatusFilter = '已接單'" :class="orderStatusFilter === '已接單' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs">已接單</button>
+              </div>
+            </div>
+            <div class="space-y-3 max-h-[560px] overflow-y-auto pr-2 custom-scrollbar">
+              <template x-for="order in filteredOrders" :key="order.id">
+                <div class="border border-slate-200 rounded-3xl p-4 bg-white/90 shadow-sm text-xs">
+                  <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div class="space-y-1">
+                      <div class="flex items-center gap-2">
+                        <span class="font-black text-slate-900" x-text="order.unit"></span>
+                        <span class="text-[10px] text-slate-500">(聯絡人：<span x-text="order.userName"></span>)</span>
+                      </div>
+                      <div class="text-[11px] text-slate-500 flex flex-wrap gap-2">
+                        <span x-text="order.timestamp"></span>
+                        <span x-text="order.deliveryTime"></span>
+                        <span x-text="order.isCustomized ? '客製單' : '統一單'" class="px-2 py-0.5 rounded-full bg-slate-100"></span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[11px] text-slate-500">狀態</span>
+                      <select x-model="order.status" @change="saveOrders()" class="text-xs rounded-xl px-3 py-1 border border-slate-200 bg-white">
+                        <option value="未接單">未接單</option>
+                        <option value="已接單">已接單</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 gap-2 text-[11px] text-slate-600">
+                    <template x-for="item in order.items">
+                      <div class="flex justify-between gap-2 border-t border-slate-200 pt-2">
+                        <div>
+                          <div class="font-semibold text-slate-900" x-text="item.summary"></div>
+                          <div class="text-slate-500">數量：<span x-text="item.count"></span></div>
+                        </div>
+                        <span class="font-black text-slate-900">x<span x-text="item.count"></span></span>
+                      </div>
+                    </template>
+                  </div>
+                  <div class="mt-3 flex items-center justify-between text-[11px] text-slate-700 font-bold">
+                    <span>備註：<span x-text="order.note || '無'" class="font-medium text-slate-600"></span></span>
+                    <span>總金額：NT$<span x-text="order.totalAmount"></span></span>
+                  </div>
+                </div>
+              </template>
+              <div x-show="filteredOrders.length === 0" class="text-center py-10 text-slate-500">目前沒有符合的訂單。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div x-show="adminTab === 'content'" class="grid grid-cols-1 lg:grid-cols-12 gap-8" x-transition>
+        <div class="lg:col-span-6 space-y-6">
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <i class="fa-solid fa-photo-film text-brand-600"></i><span>前台輪播照片管理</span>
+            </h4>
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">照片網址</label>
+                <input type="text" x-model="newPhoto.src" placeholder="輸入圖片完整網址" class="w-full px-3 py-2 rounded-xl glass-input">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">圖片說明</label>
+                <input type="text" x-model="newPhoto.label" placeholder="例如：端午節限定紫米飯" class="w-full px-3 py-2 rounded-xl glass-input">
+              </div>
+              <button @click="addPhotoSlide()" class="glass-btn-primary w-full text-white py-2.5 rounded-xl font-black">新增輪播照片</button>
+            </div>
+            <div class="space-y-3">
+              <template x-for="(slide, idx) in photoSlides" :key="idx">
+                <div class="border border-slate-200 rounded-3xl p-4 bg-white/80">
+                  <div class="flex items-center justify-between gap-3 mb-3">
+                    <span class="text-[11px] font-bold text-slate-600">第 <span x-text="idx+1"></span> 張</span>
+                    <button @click="removePhotoSlide(idx)" class="glass-btn-danger text-white px-3 py-1.5 rounded-xl text-[11px]">刪除</button>
+                  </div>
+                  <div class="space-y-3 text-xs">
+                    <div>
+                      <label class="block font-bold text-slate-700 mb-1">圖片網址</label>
+                      <input type="text" x-model="slide.src" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                    </div>
+                    <div>
+                      <label class="block font-bold text-slate-700 mb-1">說明文字</label>
+                      <input type="text" x-model="slide.label" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                    </div>
+                    <div class="rounded-2xl overflow-hidden border border-slate-200">
+                      <img :src="slide.src" :alt="slide.label" class="w-full h-36 object-cover"> 
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <div x-show="photoSlides.length === 0" class="text-center text-slate-500 text-xs py-4">目前沒有上架輪播照片。</div>
+            </div>
+            <button @click="saveContent()" class="glass-btn text-slate-800 w-full py-2.5 rounded-xl font-black">儲存照片設定</button>
+          </div>
+        </div>
+
+        <div class="lg:col-span-6 space-y-6">
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <i class="fa-solid fa-bullhorn text-brand-600"></i><span>前台公告內容管理</span>
+            </h4>
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">公告標題</label>
+                <input type="text" x-model="newAnnouncement.title" placeholder="例如：端午節限定優惠" class="w-full px-3 py-2 rounded-xl glass-input">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">公告內容</label>
+                <textarea x-model="newAnnouncement.body" rows="3" placeholder="輸入公告說明內容" class="w-full px-3 py-2 rounded-2xl glass-input resize-none"></textarea>
+              </div>
+              <button @click="addAnnouncement()" class="glass-btn-primary w-full text-white py-2.5 rounded-xl font-black">新增公告項目</button>
+            </div>
+            <div class="space-y-3">
+              <template x-for="(item, idx) in announcements" :key="idx">
+                <div class="border border-slate-200 rounded-3xl p-4 bg-white/80 text-xs">
+                  <div class="flex items-center justify-between gap-3 mb-3">
+                    <span class="font-bold text-slate-700">公告 #<span x-text="idx+1"></span></span>
+                    <button @click="removeAnnouncement(idx)" class="glass-btn-danger text-white px-3 py-1.5 rounded-xl text-[11px]">刪除</button>
+                  </div>
+                  <div class="space-y-3">
+                    <div>
+                      <label class="block font-bold text-slate-700 mb-1">標題</label>
+                      <input type="text" x-model="item.title" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                    </div>
+                    <div>
+                      <label class="block font-bold text-slate-700 mb-1">內容</label>
+                      <textarea x-model="item.body" rows="3" class="w-full px-3 py-2 rounded-2xl glass-input text-xs resize-none"></textarea>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <div x-show="announcements.length === 0" class="text-center text-slate-500 text-xs py-4">目前沒有公告內容。</div>
+            </div>
+            <button @click="saveContent()" class="glass-btn text-slate-800 w-full py-2.5 rounded-xl font-black">儲存公告設定</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-white/40 backdrop-blur-md border-t border-white/20 py-4 text-center text-xs text-slate-600 relative z-10">
+    <p>© 2026 VegeBento Go! 智慧健康素食餐盒控制系統. All rights reserved.</p>
+  </footer>
+
+  <script>
+    function bentoAdminApp() {
+      return {
+        isAdminAuthenticated: false,
+        loginUsername: '',
+        loginPassword: '',
+        loginError: '',
+        adminTab: 'orders',
+        orders: [],
+        mainDishes: [],
+        photoSlides: [],
+        announcements: [],
+        newPhoto: { src: '', label: '' },
+        newAnnouncement: { title: '', body: '' },
+        orderQuery: '',
+        orderStatusFilter: 'all',
+        
+        editingDish: { id: null, name: '', priceType: 'all', specificPrice: '', vegType: '全素', available: true },
+        confirmModal: { show: false, title: '', message: '', actionType: '', targetId: null },
+        toast: { show: false, message: '', type: 'success' },
+
+        async init() {
+          if (sessionStorage.getItem('vege_admin_auth') === 'true') {
+            this.isAdminAuthenticated = true;
+          }
+          await this.loadDataFromStorage();
+          window.addEventListener('storage', async (e) => {
+            if (e.key === 'vege_bento_orders' || e.key === 'vege_bento_main_dishes') {
+              await this.loadDataFromStorage();
+            }
+          });
+          // 每隔 5 秒向資料庫輪詢最新訂單與設定以維持同步性！
+          setInterval(async () => {
+            await this.loadDataFromStorage();
+          }, 5000);
+        },
+
+        login() {
+          if (this.loginUsername === '123456789' && this.loginPassword === '123456789') {
+            this.isAdminAuthenticated = true;
+            this.loginError = '';
+            sessionStorage.setItem('vege_admin_auth', 'true');
+            this.showToast('管理者身分認證成功！');
+          } else {
+            this.loginError = '認證失敗：帳號或密碼輸入錯誤。';
+          }
+        },
+
+        logout() {
+          this.isAdminAuthenticated = false;
+          sessionStorage.removeItem('vege_admin_auth');
+          this.showToast('已安全登出後台管理系統！', 'warning');
+        },
+
+        async loadDataFromStorage() {
+          const dbOrders = await VegeBentoDB.getOrders();
+          this.orders = dbOrders;
+
+          const dbDishes = await VegeBentoDB.getDishes();
+          this.mainDishes = dbDishes.map(dish => {
+            const normalized = {
+              ...dish,
+              vegType: dish.vegType || '全素'
+            };
+            if (!normalized.priceType && normalized.priceRange) {
+              normalized.priceType = normalized.priceRange === 'all' ? 'all' : 'range';
+              normalized.specificPrice = normalized.priceRange === 'all' ? '' : (String(normalized.priceRange).match(/\d+/) || [''])[0];
+              delete normalized.priceRange;
+            }
+            if (!normalized.priceType) {
+              normalized.priceType = 'all';
+              normalized.specificPrice = '';
+            }
+            if (normalized.priceType === 'all') normalized.specificPrice = normalized.specificPrice || '';
+            return normalized;
+          });
+
+          const dbSlides = await VegeBentoDB.getPhotoSlides();
+          if (dbSlides && dbSlides.length > 0) {
+            this.photoSlides = dbSlides;
+          } else {
+            this.photoSlides = [];
+          }
+
+          const dbAnnouncements = await VegeBentoDB.getAnnouncements();
+          if (dbAnnouncements && dbAnnouncements.length > 0) {
+            this.announcements = dbAnnouncements;
+          } else {
+            this.announcements = [];
+          }
+        },
+
+        async saveOrders() {
+          for (const ord of this.orders) {
+            await VegeBentoDB.saveOrder(ord);
+          }
+          this.showToast('訂單狀態已更新。');
+        },
+
+        async addPhotoSlide() {
+          if (!this.newPhoto.src.trim() || !this.newPhoto.label.trim()) {
+            return this.showToast('請填寫照片網址與說明文字。', 'warning');
+          }
+          this.photoSlides.push({ src: this.newPhoto.src.trim(), label: this.newPhoto.label.trim() });
+          this.newPhoto.src = '';
+          this.newPhoto.label = '';
+          await VegeBentoDB.savePhotoSlides(this.photoSlides);
+          this.showToast('輪播照片已新增！');
+        },
+
+        async removePhotoSlide(index) {
+          this.photoSlides.splice(index, 1);
+          await VegeBentoDB.savePhotoSlides(this.photoSlides);
+          this.showToast('已移除該張輪播照片。', 'warning');
+        },
+
+        async addAnnouncement() {
+          if (!this.newAnnouncement.title.trim() || !this.newAnnouncement.body.trim()) {
+            return this.showToast('請填寫公告標題與內容。', 'warning');
+          }
+          this.announcements.push({ title: this.newAnnouncement.title.trim(), body: this.newAnnouncement.body.trim() });
+          this.newAnnouncement.title = '';
+          this.newAnnouncement.body = '';
+          await VegeBentoDB.saveAnnouncements(this.announcements);
+          this.showToast('公告內容已新增！');
+        },
+
+        async removeAnnouncement(index) {
+          this.announcements.splice(index, 1);
+          await VegeBentoDB.saveAnnouncements(this.announcements);
+          this.showToast('已移除該則公告。', 'warning');
+        },
+
+        async saveContent() {
+          await VegeBentoDB.savePhotoSlides(this.photoSlides);
+          await VegeBentoDB.saveAnnouncements(this.announcements);
+          this.showToast('照片與公告設定已儲存！');
+        },
+
+        async updateOrderStatus(order) {
+          await VegeBentoDB.saveOrder(order);
+          this.showToast(`訂單 ${order.id} 狀態已成功更新為【${order.status}】`);
+        },
+
+        async saveMainDish() {
+          if (!this.editingDish.name.trim()) return this.showToast('請輸入主菜項目名稱！', 'warning');
+          if (this.editingDish.priceType === 'range' && !this.editingDish.specificPrice.trim()) return this.showToast('請輸入適用價格數字！', 'warning');
+          
+          let dishToSave = null;
+          if (this.editingDish.id) {
+            dishToSave = { ...this.editingDish };
+            const index = this.mainDishes.findIndex(d => d.id === this.editingDish.id);
+            if (index > -1) {
+              this.mainDishes[index] = dishToSave;
+            }
+            this.showToast('主菜項目修改成功！');
+          } else {
+            dishToSave = {
+              id: Date.now(),
+              name: this.editingDish.name,
+              priceType: this.editingDish.priceType,
+              specificPrice: this.editingDish.priceType === 'range' ? this.editingDish.specificPrice.trim() : '',
+              vegType: this.editingDish.vegType,
+              available: this.editingDish.available
+            };
+            this.mainDishes.push(dishToSave);
+            this.showToast('新增當日主菜上架成功！');
+          }
+          await VegeBentoDB.saveDish(dishToSave);
+          this.resetEditingDish();
+        },
+
+        editDish(dish) { this.editingDish = { ...dish }; },
+        resetEditingDish() { this.editingDish = { id: null, name: '', priceType: 'all', specificPrice: '', vegType: '全素', available: true }; },
+        goToClient() { window.location.href = 'index.html'; },
+        getTotalBentoCount() { return this.orders.reduce((sum, ord) => sum + ord.items.length, 0); },
+        getTotalTablewareCount() { return this.orders.reduce((sum, ord) => sum + (ord.needTableware ? ord.items.length : 0), 0); },
+        getPriceRuleLabel(dish) {
+          if (!dish || dish.priceType === 'all') return '無預算限制';
+          if (dish.priceType === 'range' && dish.specificPrice) return `NT$ ${dish.specificPrice} 以上可用`;
+          return '未設定價格條件';
+        },
+
+        aggregateKitchenMainDishes() {
+          const dict = {};
+          this.orders.forEach(ord => {
+            ord.items.forEach(item => {
+              const name = item.mainDish || '標準蔬食';
+              dict[name] = (dict[name] || 0) + 1;
+            });
+          });
+          return dict;
+        },
+
+        triggerDeleteDish(id) {
+          this.confirmModal.title = '下架主菜項目';
+          this.confirmModal.message = '您確定要從今日供應清單中移除這道主菜嗎？';
+          this.confirmModal.actionType = 'deleteDish';
+          this.confirmModal.targetId = id;
+          this.confirmModal.show = true;
+        },
+
+        get filteredOrders() {
+          return this.orders.filter(order => {
+            const query = this.orderQuery.trim().toLowerCase();
+            const statusMatch = this.orderStatusFilter === 'all' || order.status === this.orderStatusFilter;
+            const queryMatch = !query || order.unit.toLowerCase().includes(query) || order.userName.toLowerCase().includes(query);
+            return statusMatch && queryMatch;
+          });
+        },
+
+        triggerClearAllOrders() {
+          this.confirmModal.title = '重置與清空今日訂單';
+          this.confirmModal.message = '此動作將清空所有顧客點餐歷史看板，該操作不可逆！是否確認清除？';
+          this.confirmModal.actionType = 'clearOrders';
+          this.confirmModal.targetId = null;
+          this.confirmModal.show = true;
+        },
+
+        async executeConfirmedAction() {
+          this.confirmModal.show = false;
+          if (this.confirmModal.actionType === 'clearOrders') {
+            this.orders = [];
+            await VegeBentoDB.clearAllOrders();
+            this.showToast('今日點餐資料已全部重置！', 'warning');
+          } else if (this.confirmModal.actionType === 'deleteDish') {
+            const idToDelete = this.confirmModal.targetId;
+            this.mainDishes = this.mainDishes.filter(d => d.id !== idToDelete);
+            await VegeBentoDB.deleteDish(idToDelete);
+            this.showToast('主菜項目已成功移除！');
+          }
+        },
+
+        showToast(msg, type = 'success') {
+          this.toast.message = msg;
+          this.toast.type = type;
+          this.toast.show = true;
+          setTimeout(() => { this.toast.show = false; }, 3000);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
