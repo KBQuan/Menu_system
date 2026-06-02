@@ -40,11 +40,14 @@
   <script src="js/config.js"></script>
   <script src="js/db.js"></script>
   <link rel="stylesheet" href="admin.css">
+  <style>
+    html { transition: font-size 0.2s ease; }
+  </style>
 </head>
 
 <body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-cover bg-center bg-fixed"
   style="background-image: url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=2000&auto=format&fit=crop');"
-  x-data="bentoAdminApp()" x-init="init()">
+  x-data="bentoAdminApp()" x-init="init(); $watch('settings.adminFontSize', v => { document.documentElement.style.fontSize = v + 'px'; queueSettingsSave(); }); $watch('settings.clientFontSize', () => queueSettingsSave());">
   <header class="border-b border-white/20 bg-white/55 backdrop-blur-md shadow-sm sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16 items-center">
@@ -183,12 +186,24 @@
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-image"></i><span>照片與公告管理</span>
           </button>
+          <button @click="adminTab = 'settings'"
+            :class="adminTab === 'settings' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'"
+            class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
+            <i class="fa-solid fa-sliders"></i><span>系統設置</span>
+          </button>
         </nav>
-        <button @click="loadDataFromStorage(); showToast('已成功同步雲端最新資料！')"
-          class="glass-btn text-xs font-black px-3.5 py-2 rounded-xl flex items-center space-x-1.5 text-brand-700 hover:scale-105 active:scale-95 transition-all mb-2 shadow-sm border border-brand-200">
-          <i class="fa-solid fa-arrows-rotate"></i>
-          <span>雲端資料重新整理</span>
-        </button>
+        <div class="flex flex-wrap gap-2 mb-2">
+          <button @click="loadDataFromStorage(); showToast('已成功同步雲端最新資料！')"
+            class="glass-btn text-xs font-black px-3.5 py-2 rounded-xl flex items-center space-x-1.5 text-brand-700 hover:scale-105 active:scale-95 transition-all shadow-sm border border-brand-200">
+            <i class="fa-solid fa-arrows-rotate"></i>
+            <span>雲端資料重新整理</span>
+          </button>
+          <button @click="syncLocalDataToCloud()"
+            class="glass-btn text-xs font-black px-3.5 py-2 rounded-xl flex items-center space-x-1.5 text-emerald-700 hover:scale-105 active:scale-95 transition-all shadow-sm border border-emerald-200">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>本機資料匯入雲端</span>
+          </button>
+        </div>
       </div>
 
       <div x-show="adminTab === 'orders'" class="grid grid-cols-1 lg:grid-cols-12 gap-8" x-transition>
@@ -417,62 +432,85 @@
             </div>
             <div class="grid grid-cols-1 gap-3">
               <input type="text" x-model="orderQuery" placeholder="搜尋訂購單位或姓名"
-                class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                class="w-full px-3 py-2 rounded-xl glass-input text-sm font-bold">
               <div class="flex flex-wrap gap-2">
                 <button type="button" @click="orderStatusFilter = 'all'"
                   :class="orderStatusFilter === 'all' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'"
-                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs">全部</button>
+                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-sm font-bold">全部</button>
                 <button type="button" @click="orderStatusFilter = '未接單'"
                   :class="orderStatusFilter === '未接單' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'"
-                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs">未接單</button>
+                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-sm font-bold">未接單</button>
                 <button type="button" @click="orderStatusFilter = '已接單'"
                   :class="orderStatusFilter === '已接單' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'"
-                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs">已接單</button>
+                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-sm font-bold">已接單</button>
               </div>
             </div>
-            <div class="space-y-3 max-h-[560px] overflow-y-auto pr-2 custom-scrollbar">
-              <template x-for="order in filteredOrders" :key="order.id">
-                <div class="border border-slate-200 rounded-3xl p-4 bg-white/90 shadow-sm text-xs">
-                  <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-                    <div class="space-y-1">
-                      <div class="flex items-center gap-2">
-                        <span class="font-black text-slate-900" x-text="order.unit"></span>
-                        <span class="text-[10px] text-slate-500">(聯絡人：<span x-text="order.userName"></span>)</span>
-                      </div>
-                      <div class="text-[11px] text-slate-500 flex flex-wrap gap-2">
-                        <span x-text="order.timestamp"></span>
-                        <span x-text="order.deliveryTime"></span>
-                        <span x-text="order.isCustomized ? '客製單' : '統一單'"
-                          class="px-2 py-0.5 rounded-full bg-slate-100"></span>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span class="text-[11px] text-slate-500">狀態</span>
-                      <select x-model="order.status" @change="saveOrders()"
-                        class="text-xs rounded-xl px-3 py-1 border border-slate-200 bg-white">
-                        <option value="未接單">未接單</option>
-                        <option value="已接單">已接單</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-1 gap-2 text-[11px] text-slate-600">
-                    <template x-for="item in order.items">
-                      <div class="flex justify-between gap-2 border-t border-slate-200 pt-2">
-                        <div>
-                          <div class="font-semibold text-slate-900" x-text="item.summary"></div>
-                          <div class="text-slate-500">數量：<span x-text="item.count"></span></div>
+            <div class="max-h-[620px] overflow-auto rounded-2xl border border-slate-200 bg-white/90 shadow-sm custom-scrollbar">
+              <table class="min-w-[1180px] w-full text-sm text-left">
+                <thead class="sticky top-0 z-10 bg-brand-50/95 text-slate-800 border-b border-slate-200">
+                  <tr class="text-[13px] font-black">
+                    <th class="px-4 py-3 w-[120px]">訂單編號</th>
+                    <th class="px-4 py-3 w-[180px]">訂購資訊</th>
+                    <th class="px-4 py-3 w-[120px]">時間</th>
+                    <th class="px-4 py-3 w-[220px]">配送地址</th>
+                    <th class="px-4 py-3 min-w-[360px]">餐點明細</th>
+                    <th class="px-4 py-3 w-[110px]">總金額</th>
+                    <th class="px-4 py-3 w-[130px]">狀態</th>
+                    <th class="px-4 py-3 w-[180px]">備註</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 text-slate-700">
+                  <template x-for="order in filteredOrders" :key="order.id">
+                    <tr class="align-top hover:bg-brand-50/35 transition-colors">
+                      <td class="px-4 py-3 font-black text-brand-700" x-text="order.id"></td>
+                      <td class="px-4 py-3">
+                        <div class="font-black text-slate-900" x-text="order.unit"></div>
+                        <div class="text-xs text-slate-500 mt-1">聯絡人：<span x-text="order.userName"></span></div>
+                        <span class="inline-flex mt-2 px-2 py-0.5 rounded-full bg-slate-100 text-xs font-bold"
+                          x-text="order.isCustomized ? '客製單' : '統一單'"></span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <div class="font-bold text-slate-900" x-text="order.timestamp"></div>
+                        <div class="text-xs text-slate-500 mt-1" x-text="order.deliveryTime || '未註明'"></div>
+                      </td>
+                      <td class="px-4 py-3 font-bold text-slate-900 whitespace-normal" x-text="order.deliveryAddress || '未註明'"></td>
+                      <td class="px-4 py-3">
+                        <div class="space-y-2">
+                          <template x-for="(item, idx) in order.items" :key="idx">
+                            <div class="rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
+                              <div class="font-black text-slate-900">
+                                <span x-text="(idx + 1) + '. ' + item.name"></span>
+                                <span class="ml-2 text-brand-700" x-text="item.mainDish"></span>
+                              </div>
+                              <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-slate-500">
+                                <span>飯別：<span class="text-slate-700" x-text="item.riceType"></span></span>
+                                <span>飯量：<span class="text-slate-700" x-text="item.rice"></span></span>
+                                <span>價格：NT$<span class="text-slate-700" x-text="item.price"></span></span>
+                                <span>數量：<span class="text-slate-700" x-text="item.count"></span></span>
+                              </div>
+                              <div x-show="item.dislikes.length > 0 || item.otherDislike"
+                                class="mt-1 text-xs font-bold text-rose-700">
+                                忌口：
+                                <span x-text="[...item.dislikes, item.otherDislike].filter(Boolean).join('、')"></span>
+                              </div>
+                            </div>
+                          </template>
                         </div>
-                        <span class="font-black text-slate-900">x<span x-text="item.count"></span></span>
-                      </div>
-                    </template>
-                  </div>
-                  <div class="mt-3 flex items-center justify-between text-[11px] text-slate-700 font-bold">
-                    <span>備註：<span x-text="order.note || '無'" class="font-medium text-slate-600"></span></span>
-                    <span>總金額：NT$<span x-text="order.totalAmount"></span></span>
-                  </div>
-                </div>
-              </template>
-              <div x-show="filteredOrders.length === 0" class="text-center py-10 text-slate-500">目前沒有符合的訂單。</div>
+                      </td>
+                      <td class="px-4 py-3 font-black text-slate-900">NT$<span x-text="order.totalAmount"></span></td>
+                      <td class="px-4 py-3">
+                        <select x-model="order.status" @change="saveOrders()"
+                          class="text-sm font-bold rounded-xl px-3 py-2 border border-slate-200 bg-white">
+                          <option value="未接單">未接單</option>
+                          <option value="已接單">已接單</option>
+                        </select>
+                      </td>
+                      <td class="px-4 py-3 text-slate-600 whitespace-normal" x-text="order.note || '無'"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+              <div x-show="filteredOrders.length === 0" class="text-center py-10 text-slate-500 text-sm">目前沒有符合的訂單。</div>
             </div>
           </div>
         </div>
@@ -587,6 +625,144 @@
           </div>
         </div>
       </div>
+
+      <div x-show="adminTab === 'settings'" class="grid grid-cols-1 lg:grid-cols-2 gap-8" x-transition>
+        <div class="space-y-6">
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <i class="fa-solid fa-text-height text-brand-600"></i><span>文字大小設置</span>
+            </h4>
+            <p class="text-xs text-slate-600">調整前台和後台介面的文字顯示大小，所有文字全部連動縮放。</p>
+            <div class="space-y-5">
+              <!-- 前台點餐文字大小 -->
+              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl space-y-3">
+                <label class="block font-bold text-slate-700 text-sm">前台點餐文字大小</label>
+                <div class="flex items-center space-x-3">
+                  <input type="range" x-model.number="settings.clientFontSize" min="12" max="20" step="1"
+                    class="flex-grow h-2 bg-white/50 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                  <span class="text-sm font-black text-brand-700 bg-white/60 px-3 py-1 rounded-lg min-w-[56px] text-center" x-text="settings.clientFontSize + 'px'"></span>
+                </div>
+                <div class="mt-2 text-slate-600 bg-white/30 p-3 rounded-lg" :style="{ fontSize: settings.clientFontSize + 'px' }">
+                  預覽：這是點餐介面上的文字大小，同仁點餐單、主菜選擇、備註等。
+                </div>
+              </div>
+              <!-- 後台管理文字大小 -->
+              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl space-y-3">
+                <label class="block font-bold text-slate-700 text-sm">後台管理文字大小（即時生效）</label>
+                <div class="flex items-center gap-2 bg-white/30 border border-slate-200 rounded-xl px-2 py-1.5">
+                  <span class="text-xs font-bold text-slate-400 pl-1">Aa</span>
+                  <input type="range" x-model.number="settings.adminFontSize" min="12" max="20" step="1"
+                    class="flex-grow h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                  <div class="flex items-center gap-1.5">
+                    <button @click="settings.adminFontSize = Math.max(12, settings.adminFontSize - 1)"
+                      class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-sm flex items-center justify-center transition-all">-</button>
+                    <span class="text-sm font-black text-brand-700 bg-white/60 px-2.5 py-0.5 rounded-lg min-w-[48px] text-center" x-text="settings.adminFontSize + 'px'"></span>
+                    <button @click="settings.adminFontSize = Math.min(20, settings.adminFontSize + 1)"
+                      class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-sm flex items-center justify-center transition-all">+</button>
+                  </div>
+                </div>
+                <div class="mt-2 text-slate-600 bg-white/30 p-3 rounded-lg" :style="{ fontSize: settings.adminFontSize + 'px' }">
+                  預覽：這是後台管理介面上的文字大小，調整後頁面全部文字連動縮放。
+                </div>
+                <p class="text-[10px] text-brand-700 font-semibold flex items-center gap-1">
+                  <i class="fa-solid fa-circle-info"></i>拖動滑桿或按 +/- 即時預覽全頁文字縮放效果
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <i class="fa-solid fa-receipt text-brand-600"></i><span>收據需求設置</span>
+            </h4>
+            <p class="text-xs text-slate-600">設定客戶是否需要付款收據。</p>
+            <div class="space-y-3">
+              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl">
+                <div class="flex items-center space-x-3">
+                  <input type="checkbox" x-model="settings.requireReceipt"
+                    class="h-5 w-5 text-brand-600 border-white/60 rounded bg-white/20 cursor-pointer">
+                  <label class="text-sm font-bold text-slate-800 cursor-pointer flex-grow">
+                    是否啟用收據功能
+                  </label>
+                </div>
+                <p class="text-xs text-slate-600 mt-2 ml-8">勾選此選項將在訂單詳情中顯示收據需求選項</p>
+              </div>
+              
+              <div x-show="settings.requireReceipt" class="bg-brand-50/40 border border-brand-200/50 p-4 rounded-2xl space-y-2" x-transition>
+                <div class="flex items-center space-x-3">
+                  <input type="checkbox" x-model="settings.receiptByDefault"
+                    class="h-5 w-5 text-brand-600 border-white/60 rounded bg-white/20 cursor-pointer">
+                  <label class="text-sm font-bold text-slate-800 cursor-pointer flex-grow">
+                    預設勾選「需要收據」
+                  </label>
+                </div>
+                <p class="text-xs text-slate-600 ml-8">新訂單預設是否需要收據（客戶仍可修改）</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <i class="fa-solid fa-location-dot text-brand-600"></i><span>配送地址設置</span>
+            </h4>
+            <p class="text-xs text-slate-600">管理外送配送地址的相關設定，可將預設地址一鍵導入前台表單。</p>
+            <div class="space-y-3">
+              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl">
+                <label class="block font-bold text-slate-700 mb-2 text-sm">預設配送地址</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"><i class="fa-solid fa-location-dot"></i></span>
+                  <input type="text" x-model="settings.defaultDeliveryAddress"
+                    placeholder="例如：彰化縣彰化市中山路 100 號"
+                    class="w-full pl-8 pr-3 py-2 rounded-xl glass-input text-sm">
+                </div>
+                <button @click="importDeliveryAddressToClient()"
+                  class="mt-3 w-full glass-btn-primary text-white py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-file-import"></i>
+                  <span>導入至前台預設地址</span>
+                </button>
+                <p class="text-[10px] text-slate-500 mt-2">點擊後前台訂單表地址欄將自動填入此地址</p>
+              </div>
+
+              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl">
+                <label class="block font-bold text-slate-700 mb-2 text-sm">配送地址提示文字</label>
+                <textarea x-model="settings.deliveryAddressHint"
+                  placeholder="例如：請確認是否需要外送，外送費用另計。"
+                  class="w-full px-3 py-2 rounded-xl glass-input text-xs h-20 resize-none"></textarea>
+              </div>
+
+              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl">
+                <div class="flex items-center space-x-3">
+                  <input type="checkbox" x-model="settings.requireDeliveryAddress"
+                    class="h-5 w-5 text-brand-600 border-white/60 rounded bg-white/20 cursor-pointer">
+                  <label class="text-sm font-bold text-slate-800 cursor-pointer flex-grow">
+                    強制要求填寫配送地址
+                  </label>
+                </div>
+                <p class="text-xs text-slate-600 mt-2 ml-8">勾選後客戶必須填寫配送地址才能完成訂單</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <i class="fa-solid fa-floppy-disk text-brand-600"></i><span>設置保存</span>
+            </h4>
+            <p class="text-xs text-slate-600 mb-3">所有設定更改將自動保存到雲端資料庫。</p>
+            <div class="space-y-2">
+              <button @click="saveSettings()"
+                class="glass-btn-primary text-white w-full py-3 rounded-xl font-black flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-check"></i><span>保存所有設置</span>
+              </button>
+              <button @click="resetSettings()"
+                class="glass-btn text-slate-800 w-full py-2.5 rounded-xl font-bold flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-rotate-left"></i><span>恢復預設設置</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -611,24 +787,43 @@
         newAnnouncement: { title: '', body: '' },
         orderQuery: '',
         orderStatusFilter: 'all',
+        settingsSaveTimer: null,
+        isLoadingSettings: false,
 
         editingDish: { id: null, name: '', priceType: 'all', specificPrice: '', vegType: '全素', available: true },
         confirmModal: { show: false, title: '', message: '', actionType: '', targetId: null },
         toast: { show: false, message: '', type: 'success' },
+
+        settings: {
+          clientFontSize: 14,
+          adminFontSize: 13,
+          requireReceipt: false,
+          receiptByDefault: false,
+          defaultDeliveryAddress: '',
+          deliveryAddressHint: '',
+          requireDeliveryAddress: false
+        },
 
         async init() {
           if (sessionStorage.getItem('vege_admin_auth') === 'true') {
             this.isAdminAuthenticated = true;
           }
           await this.loadDataFromStorage();
+          await this.loadSettings();
+          // 初始化後台根字級
+          document.documentElement.style.fontSize = this.settings.adminFontSize + 'px';
           window.addEventListener('storage', async (e) => {
-            if (e.key === 'vege_bento_orders' || e.key === 'vege_bento_main_dishes') {
+            if (e.key === 'vege_bento_orders' || e.key === 'vege_bento_main_dishes' || e.key === 'vege_bento_admin_settings') {
               await this.loadDataFromStorage();
+              if (e.key === 'vege_bento_admin_settings') {
+                await this.loadSettings();
+              }
             }
           });
           // 每隔 5 秒向資料庫輪詢最新訂單與設定以維持同步性！
           setInterval(async () => {
             await this.loadDataFromStorage();
+            await this.loadSettings();
           }, 5000);
         },
 
@@ -651,7 +846,20 @@
 
         async loadDataFromStorage() {
           const dbOrders = await VegeBentoDB.getOrders();
-          this.orders = dbOrders;
+          this.orders = dbOrders.map(order => ({
+            ...order,
+            items: (order.items || []).map(item => ({
+              ...item,
+              name: item.name || item.summary || '未命名餐盒',
+              mainDish: item.mainDish || '未指定',
+              rice: item.rice || '未註明',
+              riceType: item.riceType || '未註明',
+              price: item.price ?? '',
+              dislikes: Array.isArray(item.dislikes) ? item.dislikes : [],
+              otherDislike: item.otherDislike || '',
+              count: item.count || 1
+            }))
+          }));
 
           const dbDishes = await VegeBentoDB.getDishes();
           this.mainDishes = dbDishes.map(dish => {
@@ -684,6 +892,75 @@
             this.announcements = dbAnnouncements;
           } else {
             this.announcements = [];
+          }
+        },
+
+        async loadSettings() {
+          const dbSettings = await VegeBentoDB.getAdminSettings();
+          if (dbSettings) {
+            this.isLoadingSettings = true;
+            this.settings = { ...this.settings, ...dbSettings };
+            // 載入設定後同步根字級
+            document.documentElement.style.fontSize = this.settings.adminFontSize + 'px';
+            this.isLoadingSettings = false;
+          }
+        },
+
+        queueSettingsSave() {
+          if (this.isLoadingSettings) return;
+          clearTimeout(this.settingsSaveTimer);
+          this.settingsSaveTimer = setTimeout(async () => {
+            await VegeBentoDB.saveAdminSettings(this.settings);
+          }, 350);
+        },
+
+        importDeliveryAddressToClient() {
+          const addr = (this.settings.defaultDeliveryAddress || '').trim();
+          if (!addr) {
+            this.showToast('請先輸入預設配送地址再導入！', 'warning');
+            return;
+          }
+          // 寫入 localStorage，前台 index.html 初始化時會讀取
+          localStorage.setItem('vege_bento_default_address', addr);
+          this.showToast(`地址「${addr}」已導入至前台預設地址！`);
+        },
+
+        async saveSettings() {
+          await VegeBentoDB.saveAdminSettings(this.settings);
+          this.showToast('系統設置已成功保存！');
+        },
+
+        resetSettings() {
+          this.confirmModal.title = '恢復預設設置';
+          this.confirmModal.message = '此操作將恢復所有設置到預設值。是否確認？';
+          this.confirmModal.actionType = 'resetSettings';
+          this.confirmModal.targetId = null;
+          this.confirmModal.show = true;
+        },
+
+        async executeConfirmedAction() {
+          this.confirmModal.show = false;
+          if (this.confirmModal.actionType === 'clearOrders') {
+            this.orders = [];
+            await VegeBentoDB.clearAllOrders();
+            this.showToast('今日點餐資料已全部重置！', 'warning');
+          } else if (this.confirmModal.actionType === 'deleteDish') {
+            const idToDelete = this.confirmModal.targetId;
+            this.mainDishes = this.mainDishes.filter(d => d.id !== idToDelete);
+            await VegeBentoDB.deleteDish(idToDelete);
+            this.showToast('主菜項目已成功移除！');
+          } else if (this.confirmModal.actionType === 'resetSettings') {
+            this.settings = {
+              clientFontSize: 14,
+              adminFontSize: 13,
+              requireReceipt: false,
+              receiptByDefault: false,
+              defaultDeliveryAddress: '',
+              deliveryAddressHint: '',
+              requireDeliveryAddress: false
+            };
+            await VegeBentoDB.saveAdminSettings(this.settings);
+            this.showToast('所有設置已恢復預設值！');
           }
         },
 
@@ -754,6 +1031,18 @@
           await VegeBentoDB.savePhotoSlides(this.photoSlides);
           await VegeBentoDB.saveAnnouncements(this.announcements);
           this.showToast('照片與公告設定已儲存！');
+        },
+
+        async syncLocalDataToCloud() {
+          try {
+            const result = await VegeBentoDB.syncLocalDataToCloud();
+            await this.loadDataFromStorage();
+            await this.loadSettings();
+            this.showToast(`已匯入雲端：訂單 ${result.orders} 筆、主菜 ${result.dishes} 筆、照片 ${result.slides} 筆、公告 ${result.announcements} 筆。`);
+          } catch (err) {
+            console.error('Sync local data to cloud failed:', err);
+            this.showToast(err.message || '本機資料匯入雲端失敗，請檢查 Supabase 設定。', 'danger');
+          }
         },
 
         async updateOrderStatus(order) {
@@ -834,20 +1123,6 @@
           this.confirmModal.actionType = 'clearOrders';
           this.confirmModal.targetId = null;
           this.confirmModal.show = true;
-        },
-
-        async executeConfirmedAction() {
-          this.confirmModal.show = false;
-          if (this.confirmModal.actionType === 'clearOrders') {
-            this.orders = [];
-            await VegeBentoDB.clearAllOrders();
-            this.showToast('今日點餐資料已全部重置！', 'warning');
-          } else if (this.confirmModal.actionType === 'deleteDish') {
-            const idToDelete = this.confirmModal.targetId;
-            this.mainDishes = this.mainDishes.filter(d => d.id !== idToDelete);
-            await VegeBentoDB.deleteDish(idToDelete);
-            this.showToast('主菜項目已成功移除！');
-          }
         },
 
         showToast(msg, type = 'success') {

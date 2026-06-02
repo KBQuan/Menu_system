@@ -24,6 +24,24 @@ function initSupabase() {
 initSupabase();
 
 const VegeBentoDB = {
+  getLocalOrders() {
+    const stored = localStorage.getItem('vege_bento_orders');
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  mergeOrders(cloudOrders, localOrders) {
+    const orderMap = new Map();
+    [...localOrders, ...cloudOrders].forEach(order => {
+      if (order && order.id) orderMap.set(order.id, order);
+    });
+    return Array.from(orderMap.values()).sort((a, b) => {
+      const aTime = Date.parse(a.createdAt || '') || 0;
+      const bTime = Date.parse(b.createdAt || '') || 0;
+      if (aTime || bTime) return bTime - aTime;
+      return String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
+    });
+  },
+
   // === 1. 主菜管理 (Main Dishes) ===
   async getDishes() {
     if (isSupabaseActive) {
@@ -110,24 +128,27 @@ const VegeBentoDB = {
         const { data, error } = await supabaseClient
           .from('vege_bento_orders')
           .select('*')
-          .order('timestamp', { ascending: false });
+          .order('created_at', { ascending: false });
         
         if (!error && data) {
           // 將資料欄位對應回 Alpine.js 所預期的駝峰命名法
-          return data.map(ord => ({
+          const cloudOrders = data.map(ord => ({
             id: ord.id,
             unit: ord.unit,
             userName: ord.user_name,
             needTableware: ord.need_tableware,
+            needReceipt: ord.need_receipt || false,
             isCustomized: ord.is_customized,
             deliveryTime: ord.delivery_time,
             deliveryAddress: ord.delivery_address,
             timestamp: ord.timestamp,
+            createdAt: ord.created_at,
             status: ord.status,
             totalAmount: ord.total_amount,
             note: ord.note,
             items: ord.items
           }));
+          return this.mergeOrders(cloudOrders, this.getLocalOrders());
         }
         console.error('Supabase getOrders error:', error);
       } catch (err) {
@@ -135,8 +156,7 @@ const VegeBentoDB = {
       }
     }
     
-    const stored = localStorage.getItem('vege_bento_orders');
-    return stored ? JSON.parse(stored) : [];
+    return this.getLocalOrders();
   },
 
   async saveOrder(order) {
@@ -147,10 +167,12 @@ const VegeBentoDB = {
           unit: order.unit,
           user_name: order.userName,
           need_tableware: order.needTableware,
+          need_receipt: order.needReceipt || false,
           is_customized: order.isCustomized,
           delivery_time: order.deliveryTime,
           delivery_address: order.deliveryAddress || '',
           timestamp: order.timestamp,
+          created_at: order.createdAt || new Date().toISOString(),
           status: order.status,
           total_amount: order.totalAmount,
           note: order.note || '',
@@ -166,7 +188,7 @@ const VegeBentoDB = {
     }
     
     // 更新本地
-    const orders = await this.getOrders();
+    const orders = this.getLocalOrders();
     const index = orders.findIndex(o => o.id === order.id);
     if (index > -1) {
       orders[index] = order;
@@ -262,5 +284,100 @@ const VegeBentoDB = {
       }
     }
     localStorage.setItem('vege_bento_announcements', JSON.stringify(announcements));
+  },
+
+  // === 5. 管理員設置 (Admin Settings) ===
+  async getAdminSettings() {
+    if (isSupabaseActive) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('vege_bento_admin_settings')
+          .select('*')
+          .single();
+        if (!error && data) {
+          const stored = localStorage.getItem('vege_bento_admin_settings');
+          const localSettings = stored ? JSON.parse(stored) : {};
+          const cloudSettings = {
+            clientFontSize: data.client_font_size || 14,
+            adminFontSize: data.admin_font_size || 13,
+            requireReceipt: data.require_receipt || false,
+            receiptByDefault: data.receipt_by_default || false,
+            defaultDeliveryAddress: data.default_delivery_address || '',
+            deliveryAddressHint: data.delivery_address_hint || '',
+            requireDeliveryAddress: data.require_delivery_address || false
+          };
+          return { ...cloudSettings, ...localSettings };
+        }
+        if (error && error.code !== 'PGRST116') {
+          console.error('Supabase getAdminSettings error:', error);
+        }
+      } catch (err) {
+        console.error('Supabase getAdminSettings exception:', err);
+      }
+    }
+
+    const stored = localStorage.getItem('vege_bento_admin_settings');
+    return stored ? JSON.parse(stored) : null;
+  },
+
+  async saveAdminSettings(settings) {
+    localStorage.setItem('vege_bento_admin_settings', JSON.stringify(settings));
+
+    if (isSupabaseActive) {
+      try {
+        const payload = {
+          id: 1,
+          client_font_size: settings.clientFontSize,
+          admin_font_size: settings.adminFontSize,
+          require_receipt: settings.requireReceipt,
+          receipt_by_default: settings.receiptByDefault,
+          default_delivery_address: settings.defaultDeliveryAddress || '',
+          delivery_address_hint: settings.deliveryAddressHint || '',
+          require_delivery_address: settings.requireDeliveryAddress
+        };
+        const { error } = await supabaseClient
+          .from('vege_bento_admin_settings')
+          .upsert(payload);
+        if (error) console.error('Supabase saveAdminSettings error:', error);
+      } catch (err) {
+        console.error('Supabase saveAdminSettings exception:', err);
+      }
+    }
+  },
+
+  async syncLocalDataToCloud() {
+    if (!isSupabaseActive) {
+      throw new Error('Supabase 尚未啟用，請先確認 js/config.js 的 URL/KEY 與網路連線。');
+    }
+
+    const localOrders = this.getLocalOrders();
+    const localDishes = JSON.parse(localStorage.getItem('vege_bento_main_dishes') || '[]');
+    const localSlides = JSON.parse(localStorage.getItem('vege_bento_photo_slides') || '[]');
+    const localAnnouncements = JSON.parse(localStorage.getItem('vege_bento_announcements') || '[]');
+    const localSettings = JSON.parse(localStorage.getItem('vege_bento_admin_settings') || 'null');
+
+    for (const dish of localDishes) {
+      await this.saveDish(dish);
+    }
+    for (const order of localOrders) {
+      await this.saveOrder(order);
+    }
+    if (localSlides.length > 0) {
+      await this.savePhotoSlides(localSlides);
+    }
+    if (localAnnouncements.length > 0) {
+      await this.saveAnnouncements(localAnnouncements);
+    }
+    if (localSettings) {
+      await this.saveAdminSettings(localSettings);
+    }
+
+    return {
+      orders: localOrders.length,
+      dishes: localDishes.length,
+      slides: localSlides.length,
+      announcements: localAnnouncements.length,
+      settings: localSettings ? 1 : 0
+    };
   }
 };

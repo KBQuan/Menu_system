@@ -47,11 +47,18 @@
   <script src="js/config.js"></script>
   <script src="js/db.js"></script>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* 全域字級縮放：控制 html 根字級，Tailwind rem 工具類自動連動 */
+    html {
+      transition: font-size 0.2s ease;
+    }
+  </style>
 </head>
 
 <body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-cover bg-center bg-fixed"
   style="background-image: url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=2000&auto=format&fit=crop');"
-  x-data="bentoApp()" x-init="init()">
+  x-data="bentoApp()"
+  x-init="init(); $watch('fontSizeLevel', v => { document.documentElement.style.fontSize = v === 0 ? '14px' : v === 2 ? '18px' : '16px'; })">
   <div class="liquid-mesh"></div>
 
   <div class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none">
@@ -105,6 +112,23 @@
           <span></span> 歷史紀錄 (<span class="font-mono text-green-600 font-bold" x-text="userHistory.length">0</span>)
         </button>
       </nav>
+
+      <div class="flex items-center gap-1.5 bg-white/50 backdrop-blur-sm border border-slate-200 rounded-xl px-1.5 py-1"
+        title="文字大小調整">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1 hidden sm:inline">字級</span>
+        <button @click="fontSizeLevel = 0"
+          :class="fontSizeLevel === 0 ? 'bg-green-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+          class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
+          style="font-size: 11px;" title="小字">A</button>
+        <button @click="fontSizeLevel = 1"
+          :class="fontSizeLevel === 1 ? 'bg-green-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+          class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
+          style="font-size: 14px;" title="標準字">A</button>
+        <button @click="fontSizeLevel = 2"
+          :class="fontSizeLevel === 2 ? 'bg-green-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+          class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
+          style="font-size: 17px;" title="大字">A</button>
+      </div>
     </div>
   </header>
 
@@ -113,7 +137,9 @@
     <aside class="lg:col-span-4 space-y-6">
       <div class="glass-panel p-5 space-y-4">
         <div class="flex items-center gap-3">
-          <span class="text-lg p-2 bg-emerald-500/10 text-emerald-700 rounded-xl font-bold">📣</span>
+          <span class="text-lg p-2 bg-emerald-500/10 text-emerald-700 rounded-xl font-bold">
+            <i class="fa-solid fa-bullhorn"></i>
+          </span>
           <div>
             <h2 class="font-bold text-base text-slate-900">最新公告</h2>
             <p class="text-xs text-slate-500">管理者資訊、活動提醒與系統公告</p>
@@ -157,7 +183,9 @@
       <div class="glass-panel p-6 space-y-5">
         <div class="flex items-center justify-between border-b border-green-900/5 pb-4">
           <div class="flex items-center gap-3">
-            <span class="text-lg p-2 bg-green-500/10 text-green-600 rounded-xl font-bold">📋</span>
+            <span class="text-lg p-2 bg-green-500/10 text-green-600 rounded-xl font-bold">
+              <i class="fa-solid fa-clipboard-list"></i>
+            </span>
             <div>
               <h2 class="font-bold text-base text-slate-900">購基本資訊</h2>
               <p class="text-xs text-slate-500 font-medium mt-0.5">請確實輸入單位與姓名，以利後台配餐流程</p>
@@ -183,19 +211,21 @@
         <div
           class="pt-2 flex flex-wrap gap-6 items-center justify-between bg-green-900/[0.02] rounded-xl p-4 border border-dashed border-green-500/20">
           <div class="flex items-center gap-3">
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" x-model="clientForm.needTableware" class="sr-only peer">
-              <div
-                class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500">
-              </div>
-              <span class="ml-3 text-sm font-bold text-slate-600">需要免洗餐具</span>
-            </label>
           </div>
 
           <button @click="toggleCustomization()"
             class="text-xs font-bold px-4 py-2 rounded-xl border flex items-center gap-2 transition-all shadow-sm glass-btn"
             :class="clientForm.isCustomized ? 'bg-amber-500/10 text-amber-700 border-amber-300' : 'text-slate-600 border-slate-200'">
-            <span x-text="clientForm.isCustomized ? '切換為 ➔ 團體單一規格' : '開放 ➔ 為每位同仁客製餐點'"></span>
+            <template x-if="clientForm.isCustomized">
+              <span class="inline-flex items-center gap-2">
+                <span>切換為</span><i class="fa-solid fa-arrow-right text-[10px]"></i><span>團體單一規格</span>
+              </span>
+            </template>
+            <template x-if="!clientForm.isCustomized">
+              <span class="inline-flex items-center gap-2">
+                <span>開放</span><i class="fa-solid fa-arrow-right text-[10px]"></i><span>為每位同仁客製餐點</span>
+              </span>
+            </template>
           </button>
         </div>
       </div>
@@ -203,7 +233,9 @@
       <div x-show="!clientForm.isCustomized" x-transition.opacity class="glass-panel p-6 space-y-6">
         <div class="flex items-center justify-between border-b border-green-900/5 pb-4">
           <div class="flex items-center gap-3">
-            <span class="text-lg p-2 bg-green-500/10 text-green-600 rounded-xl font-bold">📦</span>
+            <span class="text-lg p-2 bg-green-500/10 text-green-600 rounded-xl font-bold">
+              <i class="fa-solid fa-box-open"></i>
+            </span>
             <div>
               <h2 class="font-bold text-base text-slate-900">您需要的餐點 (全體一致)</h2>
               <p class="text-xs text-slate-500 font-medium mt-0.5">批量點餐、全體同仁主菜相同</p>
@@ -290,7 +322,7 @@
               <button type="button" @click="toggleDislikeInRow(clientForm.singleBento, opt)"
                 :class="clientForm.singleBento.dislikes.includes(opt) ? 'bg-rose-500/10 text-rose-700 border-rose-300 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'"
                 class="px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all">
-                <span x-text="'✖ ' + opt"></span>
+                <i class="fa-solid fa-xmark mr-1 text-[10px]"></i><span x-text="opt"></span>
               </button>
             </template>
           </div>
@@ -304,7 +336,9 @@
       <div x-show="clientForm.isCustomized" x-transition.opacity class="glass-panel p-6 space-y-4">
         <div class="flex flex-wrap items-center justify-between border-b border-green-900/5 pb-4 gap-3">
           <div class="flex items-center gap-3">
-            <span class="text-lg p-2 bg-amber-500/10 text-amber-700 rounded-xl font-bold">👥</span>
+            <span class="text-lg p-2 bg-amber-500/10 text-amber-700 rounded-xl font-bold">
+              <i class="fa-solid fa-users"></i>
+            </span>
             <div>
               <h2 class="font-bold text-base text-slate-900">成員專屬客製化清單</h2>
               <p class="text-xs text-slate-500 font-medium mt-0.5">每位同仁可自由決定餐盒價位、飯量、主菜與忌口</p>
@@ -417,7 +451,9 @@
       <div class="glass-panel p-6 space-y-5 bg-white/60">
         <div class="flex items-center justify-between border-b border-green-900/5 pb-4">
           <div class="flex items-center gap-3">
-            <span class="text-lg p-2 bg-green-500/10 text-green-600 rounded-xl font-bold">🛒</span>
+            <span class="text-lg p-2 bg-green-500/10 text-green-600 rounded-xl font-bold">
+              <i class="fa-solid fa-cart-shopping"></i>
+            </span>
             <div>
               <h2 class="font-bold text-base text-slate-900">發送訂單</h2>
               <p class="text-xs text-slate-500 font-medium mt-0.5">系統自動彙整項目，確認無誤後點擊送出</p>
@@ -443,9 +479,54 @@
           </div>
 
           <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">配送地址</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"><i
+                  class="fa-solid fa-location-dot"></i></span>
+              <input type="text" x-model="clientForm.deliveryAddress" placeholder="彰化縣○○鎮○○路○○號"
+                class="w-full glass-input rounded-xl pl-8 pr-3 py-2.5 text-xs font-medium focus:outline-none">
+            </div>
+          </div>
+          <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">總備註說明</label>
-            <textarea x-model="clientForm.globalNote" rows="2" placeholder="如：全部外送外盒請綁紅線、或需附收據發票等..."
+            <textarea x-model="clientForm.globalNote" rows="2" placeholder="如：全部外送外盒請綁紅線，或有其他特殊需求..."
               class="w-full glass-input rounded-xl px-3 py-2 text-xs font-medium focus:outline-none resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- 免洗餐具 & 收據選項 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- 免洗餐具 -->
+          <div class="flex items-center justify-between px-4 py-3 rounded-xl bg-green-50/80 border border-green-200/70">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-utensils text-green-500 text-sm"></i>
+              <div>
+                <p class="text-sm font-bold text-slate-700">需要免洗餐具</p>
+                <p class="text-[10px] text-slate-500">勾選後隨餐附上免洗組</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="clientForm.needTableware" class="sr-only peer">
+              <div
+                class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500">
+              </div>
+            </label>
+          </div>
+          <!-- 收據 -->
+          <div class="flex items-center justify-between px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200/70">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-file-invoice text-amber-500 text-sm"></i>
+              <div>
+                <p class="text-sm font-bold text-slate-700">需要收據</p>
+                <p class="text-[10px] text-slate-500">勾選後將於配送時附上收據</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="clientForm.needReceipt" class="sr-only peer">
+              <div
+                class="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500">
+              </div>
+            </label>
           </div>
         </div>
 
@@ -457,9 +538,15 @@
 
           <div class="flex items-center justify-between border-b border-white/10 pb-3">
             <span class="text-xs text-green-900 font-bold tracking-wider">總計</span>
-            <span
-              class="text-[10px] bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full font-mono font-bold text-emerald-900"
-              x-text="clientForm.needTableware ? '含免費免洗餐具' : '不需餐具 · 環保減塑'"></span>
+            <div class="flex items-center gap-2">
+              <span
+                class="text-[10px] bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full font-mono font-bold text-emerald-900"
+                x-text="clientForm.needTableware ? '含免費免洗餐具' : '不需餐具 · 環保減塑'"></span>
+              <template x-if="clientForm.needReceipt">
+                <span
+                  class="text-[10px] bg-amber-400/30 border border-amber-400/40 px-2.5 py-0.5 rounded-full font-bold text-amber-900">附收據</span>
+              </template>
+            </div>
           </div>
 
           <div class="space-y-2 max-h-[140px] overflow-y-auto custom-scrollbar pr-1">
@@ -467,6 +554,13 @@
               <div class="flex justify-between items-center text-xs font-medium text-green-900">
                 <span x-text="item.label"></span>
                 <span class="font-mono text-green-900 font-bold" x-text="item.val"></span>
+              </div>
+            </template>
+            <template x-if="clientForm.deliveryAddress">
+              <div class="flex justify-between items-center text-xs font-medium text-green-900">
+                <span>配送地址</span>
+                <span class="font-mono text-green-900 font-bold truncate max-w-[60%] text-right"
+                  x-text="clientForm.deliveryAddress"></span>
               </div>
             </template>
           </div>
@@ -505,17 +599,30 @@
       <div class="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
         <template x-if="userHistory.length === 0">
           <div class="text-center py-12 text-slate-400 space-y-2">
-            <div class="text-3xl">📭</div>
+            <div class="text-3xl"><i class="fa-solid fa-inbox"></i></div>
             <p class="text-xs font-medium">您在此瀏覽器尚無任何點餐歷史紀錄</p>
           </div>
         </template>
 
         <template x-for="order in userHistory" :key="order.id">
           <div class="p-4 rounded-2xl bg-white/60 border border-slate-200/60 text-xs space-y-2">
-            <div class="flex justify-between items-center font-bold">
-              <span class="text-slate-900 font-mono text-sm" x-text="order.id"></span>
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] bg-green-100 text-green-800"
-                x-text="order.status"></span>
+            <div class="flex justify-between items-center gap-2 font-bold">
+              <div>
+                <span class="text-slate-900 font-mono text-sm" x-text="order.id"></span>
+                <p class="text-[10px] text-slate-400 mt-0.5" x-text="'保留至：' + getHistoryExpireLabel(order)"></p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] bg-green-100 text-green-800"
+                  x-text="order.status"></span>
+                <button type="button" @click="editHistoryOrder(order)" title="編輯此筆歷史紀錄"
+                  class="w-7 h-7 rounded-lg bg-white/70 border border-slate-200 text-slate-600 hover:text-green-700 hover:border-green-300 transition-all">
+                  <i class="fa-regular fa-pen-to-square"></i>
+                </button>
+                <button type="button" @click="deleteHistoryOrder(order.id)" title="刪除此筆歷史紀錄"
+                  class="w-7 h-7 rounded-lg bg-white/70 border border-slate-200 text-slate-600 hover:text-rose-700 hover:border-rose-300 transition-all">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
             </div>
             <div class="text-slate-500 grid grid-cols-2 gap-1 font-medium">
               <p>訂購單位：<span class="text-slate-800" x-text="order.unit"></span></p>
@@ -554,7 +661,7 @@
       return {
         activeTab: 'client',
         showHistoryModal: false,
-        dislikesOptions: ['咖哩', '茄子', '炸物', '素料', '青椒', '豆子', '苦瓜', '皇宮菜'],
+        dislikesOptions: ['花椰菜', '咖哩', '茄子', '炸物', '素料', '青椒', '豆子', '苦瓜', '皇宮菜', '秋葵'],
         vegTypeOptions: ['全素', '蛋奶素', '奶素'],
         riceTypeOptions: ['紫米飯', '白飯'],
 
@@ -576,11 +683,14 @@
           { title: '節日促銷', body: '端午節期間，凡訂單滿 20 份享「紫米飯升級」優惠。' },
           { title: '新增菜單', body: '本季加入多款全素新主菜，請至精選項目查看。' }
         ],
+        fontSizeLevel: 1,
         clientForm: {
           unit: '',
           userName: '',
           vegType: '全素',
           needTableware: false,
+          needReceipt: false,
+          deliveryAddress: '彰化縣',
           isCustomized: false,
           deliveryTimeType: 'ASAP',
           deliveryTimeValue: '12:00',
@@ -592,12 +702,23 @@
         },
 
         async init() {
+          // 初始化時套用已儲存的字級設定
+          document.documentElement.style.fontSize =
+            this.fontSizeLevel === 0 ? '14px' : this.fontSizeLevel === 2 ? '18px' : '16px';
           await this.loadDataFromStorage();
+          await this.applyClientFontSizeSetting();
           this.autoSelectFirstAvailableDish();
           if (this.photoSlides && this.photoSlides.length > 1) {
             setInterval(() => {
               this.currentSlideIndex = (this.currentSlideIndex + 1) % this.photoSlides.length;
             }, 5000);
+          }
+        },
+
+        async applyClientFontSizeSetting() {
+          const settings = await VegeBentoDB.getAdminSettings();
+          if (settings && settings.clientFontSize) {
+            document.documentElement.style.fontSize = settings.clientFontSize + 'px';
           }
         },
 
@@ -635,7 +756,32 @@
           this.orders = dbOrders;
 
           const personalHistory = localStorage.getItem('vege_bento_user_history');
-          this.userHistory = personalHistory ? JSON.parse(personalHistory) : [];
+          this.userHistory = this.cleanupUserHistory(personalHistory ? JSON.parse(personalHistory) : []);
+        },
+
+        saveUserHistory() {
+          localStorage.setItem('vege_bento_user_history', JSON.stringify(this.userHistory));
+        },
+
+        cleanupUserHistory(history) {
+          const now = Date.now();
+          const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+          const normalized = history.map(order => ({
+            ...order,
+            createdAt: order.createdAt || new Date().toISOString()
+          })).filter(order => {
+            const createdAt = Date.parse(order.createdAt);
+            return Number.isFinite(createdAt) && now - createdAt < threeDaysMs;
+          }).slice(0, 20);
+          localStorage.setItem('vege_bento_user_history', JSON.stringify(normalized));
+          return normalized;
+        },
+
+        getHistoryExpireLabel(order) {
+          const createdAt = Date.parse(order.createdAt);
+          if (!Number.isFinite(createdAt)) return '3 天後';
+          const expiresAt = new Date(createdAt + 3 * 24 * 60 * 60 * 1000);
+          return expiresAt.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
         },
 
         isDishCompatibleWithVegType(dish, selectedType) {
@@ -681,6 +827,51 @@
         closeHistory() {
           this.showHistoryModal = false;
           this.activeTab = 'client';
+        },
+
+        deleteHistoryOrder(orderId) {
+          this.userHistory = this.userHistory.filter(order => order.id !== orderId);
+          this.saveUserHistory();
+          this.showToast('已刪除此筆歷史紀錄。', 'warning');
+        },
+
+        editHistoryOrder(order) {
+          this.clientForm.unit = order.unit || '';
+          this.clientForm.userName = order.userName || '';
+          this.clientForm.needTableware = !!order.needTableware;
+          this.clientForm.needReceipt = !!order.needReceipt;
+          this.clientForm.deliveryAddress = order.deliveryAddress || '';
+          this.clientForm.globalNote = order.note || '';
+          this.clientForm.deliveryTimeType = order.deliveryTime && order.deliveryTime !== '儘速送達' ? 'SPECIFIC' : 'ASAP';
+          this.clientForm.deliveryTimeValue = this.clientForm.deliveryTimeType === 'SPECIFIC' ? order.deliveryTime : '12:00';
+
+          this.clientForm.isCustomized = !!order.isCustomized;
+          if (this.clientForm.isCustomized) {
+            this.clientForm.customBentos = (order.items || []).map((item, idx) => this.historyItemToFormRow(item, `同仁 ${idx + 1}`));
+          } else {
+            const firstItem = (order.items || [])[0] || {};
+            this.clientForm.singleBento = {
+              ...this.historyItemToFormRow(firstItem, '統一餐盒'),
+              quantity: Math.max(1, (order.items || []).length)
+            };
+          }
+          this.closeHistory();
+          this.showToast('已將歷史紀錄帶回點餐表單，可修改後重新送出。');
+        },
+
+        historyItemToFormRow(item, fallbackName) {
+          const price = parseInt(item.price || 80);
+          return {
+            name: item.name || fallbackName,
+            price: [80, 90, 100, 110, 120].includes(price) ? String(price) : 'other',
+            otherPrice: [80, 90, 100, 110, 120].includes(price) ? '' : String(price),
+            vegType: item.vegType || '全素',
+            riceType: item.riceType || '',
+            rice: item.rice || '正常',
+            mainDish: item.mainDish || '',
+            dislikes: Array.isArray(item.dislikes) ? [...item.dislikes] : [],
+            otherDislike: item.otherDislike || ''
+          };
         },
 
         toggleCustomization() {
@@ -766,15 +957,32 @@
           if (!this.clientForm.isCustomized) {
             const priceVal = this.clientForm.singleBento.price === 'other' ? this.clientForm.singleBento.otherPrice : this.clientForm.singleBento.price;
             let disStr = this.clientForm.singleBento.dislikes.join(',') + (this.clientForm.singleBento.otherDislike ? ' ' + this.clientForm.singleBento.otherDislike : '');
-            items.push({
+            const quantity = parseInt(this.clientForm.singleBento.quantity || 1);
+            for (let i = 0; i < quantity; i++) items.push({
+              name: '統一餐盒',
+              vegType: this.clientForm.singleBento.vegType,
+              price: parseInt(priceVal || 0),
+              riceType: this.clientForm.singleBento.riceType,
+              rice: this.clientForm.singleBento.rice,
+              mainDish: this.clientForm.singleBento.mainDish || '未指定',
+              dislikes: [...this.clientForm.singleBento.dislikes],
+              otherDislike: this.clientForm.singleBento.otherDislike,
               summary: `[統一單] ${this.clientForm.singleBento.vegType} | NT$${priceVal} | 主菜: ${this.clientForm.singleBento.mainDish} | 飯別: ${this.clientForm.singleBento.riceType} | 飯量: ${this.clientForm.singleBento.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
-              count: this.clientForm.singleBento.quantity
+              count: 1
             });
           } else {
             this.clientForm.customBentos.forEach(row => {
               const priceVal = row.price === 'other' ? row.otherPrice : row.price;
               let disStr = row.dislikes.join(',') + (row.otherDislike ? ' ' + row.otherDislike : '');
               items.push({
+                name: row.name,
+                vegType: row.vegType,
+                price: parseInt(priceVal || 0),
+                riceType: row.riceType,
+                rice: row.rice,
+                mainDish: row.mainDish || '未指定',
+                dislikes: [...row.dislikes],
+                otherDislike: row.otherDislike,
                 summary: `[${row.name}] ${row.vegType} | NT$${priceVal} | 主菜: ${row.mainDish} | 飯別: ${row.riceType} | 飯量: ${row.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
                 count: 1
               });
@@ -784,17 +992,21 @@
           const finalDeliveryTime = this.clientForm.deliveryTimeType === 'SPECIFIC' ? this.clientForm.deliveryTimeValue : '儘速送達';
           const orderId = 'VEG-' + Math.floor(1000 + Math.random() * 9000);
           const timeNow = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const createdAt = new Date().toISOString();
 
           const newOrder = {
             id: orderId,
+            createdAt: createdAt,
             unit: this.clientForm.unit,
             userName: this.clientForm.userName,
             timestamp: timeNow,
             isCustomized: this.clientForm.isCustomized,
             needTableware: this.clientForm.needTableware,
+            needReceipt: this.clientForm.needReceipt,
             items: items,
             totalAmount: this.calculateTotal(),
             status: '未接單',
+            deliveryAddress: this.clientForm.deliveryAddress,
             deliveryTime: finalDeliveryTime,
             note: this.clientForm.globalNote.trim()
           };
@@ -804,7 +1016,7 @@
 
           this.orders.unshift(newOrder);
           this.userHistory.unshift(newOrder);
-          localStorage.setItem('vege_bento_user_history', JSON.stringify(this.userHistory));
+          this.userHistory = this.cleanupUserHistory(this.userHistory);
 
           this.showToast('素食餐盒訂單發送成功！已同步至雲端資料庫。', 'success');
 
