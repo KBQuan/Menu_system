@@ -220,6 +220,10 @@
                 <span class="text-[10px] block font-bold text-slate-600">免洗餐具總需求</span>
                 <span class="text-2xl font-black text-amber-700" x-text="getTotalTablewareCount()">0</span>
               </div>
+              <div class="bg-white/50 border border-white/70 p-3 rounded-2xl text-center">
+                <span class="text-[10px] block font-bold text-slate-600">需要收據訂單數</span>
+                <span class="text-2xl font-black text-brand-700" x-text="getTotalReceiptCount()">0</span>
+              </div>
             </div>
             <div class="bg-emerald-900/90 backdrop-blur-md p-4 rounded-2xl space-y-2 border border-white/10 text-white">
               <span class="text-xs text-emerald-300 font-bold block"><i
@@ -251,7 +255,8 @@
 
           <div class="space-y-4">
             <template x-for="order in orders" :key="order.id">
-              <div class="glass-panel rounded-3xl overflow-hidden shadow-sm border border-white/50 transition-all">
+              <div class="glass-panel rounded-3xl overflow-hidden shadow-sm transition-all duration-300"
+                   :class="order.status === '\u672a\u63a5\u55ae' ? 'order-pending-alert' : 'border border-white/50'">
                 <div class="p-4 bg-white/40 border-b border-white/40 flex flex-wrap justify-between items-center gap-2">
                   <div class="flex items-center space-x-2">
                     <span class="text-xs bg-brand-600 text-white font-black px-2 py-0.5 rounded-md"
@@ -289,9 +294,13 @@
                 </div>
 
                 <div class="p-4 bg-white/20 text-xs space-y-3">
-                  <div class="flex justify-between items-center text-slate-700 border-b border-white/40 pb-2 font-bold">
-                    <span class="flex items-center space-x-1"><i class="fa-solid fa-utensils"></i><span
-                        x-text="order.needTableware ? '本訂單【需要】免洗餐具' : '本單【不需要】免洗餐具 (自備環保)'"></span></span>
+                  <div class="flex flex-wrap justify-between items-center gap-2 text-slate-700 border-b border-white/40 pb-2 font-bold">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="flex items-center space-x-1"><i class="fa-solid fa-utensils"></i><span
+                          x-text="order.needTableware ? '本訂單【需要】免洗餐具' : '本單【不需要】免洗餐具 (自備環保)'"></span></span>
+                      <span class="flex items-center space-x-1 text-amber-800"><i class="fa-solid fa-file-invoice"></i><span
+                          x-text="order.needReceipt ? '本訂單【需要】收據' : '本單【不需要】收據'"></span></span>
+                    </div>
                     <span class="font-extrabold text-slate-900" x-text="'共 ' + order.items.length + ' 份素便當'"></span>
                   </div>
                   <div class="divide-y divide-white/20">
@@ -455,8 +464,10 @@
                     <th class="px-4 py-3 w-[220px]">配送地址</th>
                     <th class="px-4 py-3 min-w-[360px]">餐點明細</th>
                     <th class="px-4 py-3 w-[110px]">總金額</th>
+                    <th class="px-4 py-3 w-[90px]">餐具</th>
+                    <th class="px-4 py-3 w-[90px]">收據</th>
                     <th class="px-4 py-3 w-[130px]">狀態</th>
-                    <th class="px-4 py-3 w-[180px]">備註</th>
+                    <th class="px-4 py-3 w-[150px]">備註</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 text-slate-700">
@@ -498,9 +509,12 @@
                         </div>
                       </td>
                       <td class="px-4 py-3 font-black text-slate-900">NT$<span x-text="order.totalAmount"></span></td>
+                      <td class="px-4 py-3 text-slate-700 font-bold" x-text="order.needTableware ? '需要' : '不需要'"></td>
+                      <td class="px-4 py-3 text-slate-700 font-bold" x-text="order.needReceipt ? '需要' : '不需要'"></td>
                       <td class="px-4 py-3">
-                        <select x-model="order.status" @change="saveOrders()"
-                          class="text-sm font-bold rounded-xl px-3 py-2 border border-slate-200 bg-white">
+                        <select x-model="order.status" @change="updateOrderStatus(order)"
+                          :class="{ 'bg-red-100 text-red-800 border-red-300': order.status === '\u672a\u63a5\u55ae', 'bg-green-100 text-green-800 border-green-300': order.status === '\u5df2\u63a5\u55ae' }"
+                          class="text-sm font-bold rounded-xl px-3 py-2 border bg-white">
                           <option value="未接單">未接單</option>
                           <option value="已接單">已接單</option>
                         </select>
@@ -820,10 +834,22 @@
               }
             }
           });
-          // 每隔 5 秒向資料庫輪詢最新訂單與設定以維持同步性！
+          // 每隔 5 秒向資料庫輪詢最新訂單與設定，且有變動時發 Toast 提示
           setInterval(async () => {
+            const prevIds = new Set(this.orders.map(o => o.id));
             await this.loadDataFromStorage();
             await this.loadSettings();
+            const newIds = new Set(this.orders.map(o => o.id));
+
+            const added = [...newIds].filter(id => !prevIds.has(id));
+            const removed = [...prevIds].filter(id => !newIds.has(id));
+
+            if (added.length > 0) {
+              this.showToast(`🔔 收到 ${added.length} 筆新訂單，請儘速接單！`, 'success');
+            }
+            if (removed.length > 0) {
+              this.showToast(`ℹ️ ${removed.length} 筆訂單已被客戶取消／刪除。`, 'warning');
+            }
           }, 5000);
         },
 
@@ -1083,6 +1109,7 @@
         goToClient() { window.location.href = 'index.html'; },
         getTotalBentoCount() { return this.orders.reduce((sum, ord) => sum + ord.items.length, 0); },
         getTotalTablewareCount() { return this.orders.reduce((sum, ord) => sum + (ord.needTableware ? ord.items.length : 0), 0); },
+        getTotalReceiptCount() { return this.orders.reduce((sum, ord) => sum + (ord.needReceipt ? 1 : 0), 0); },
         getPriceRuleLabel(dish) {
           if (!dish || dish.priceType === 'all') return '無預算限制';
           if (dish.priceType === 'range' && dish.specificPrice) return `NT$ ${dish.specificPrice} 以上可用`;

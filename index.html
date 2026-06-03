@@ -344,10 +344,16 @@
               <p class="text-xs text-slate-500 font-medium mt-0.5">每位同仁可自由決定餐盒價位、飯量、主菜與忌口</p>
             </div>
           </div>
-          <button type="button" @click="addCustomBentoRow()"
-            class="glass-btn-primary text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5">
-            <i class="fa-solid fa-user-plus"></i><span>新增一位同仁</span>
-          </button>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" @click="copyAllCustomBentos()"
+              class="glass-btn text-slate-800 bg-slate-100 hover:bg-slate-200 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5">
+              <i class="fa-solid fa-copy"></i><span>複製全部餐點</span>
+            </button>
+            <button type="button" @click="addCustomBentoRow()"
+              class="glass-btn-primary text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5">
+              <i class="fa-solid fa-user-plus"></i><span>新增一位同仁</span>
+            </button>
+          </div>
         </div>
 
         <div class="space-y-4 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
@@ -361,10 +367,16 @@
                   <input type="text" x-model="row.name" placeholder="同仁稱呼 / 姓名"
                     class="w-36 glass-input rounded-xl px-2.5 py-1 text-xs font-bold focus:outline-none">
                 </div>
-                <button type="button" @click="removeCustomBentoRow(index)" x-show="clientForm.customBentos.length > 1"
-                  class="glass-btn-danger text-white px-2 py-1 rounded-lg text-[11px] font-bold">
-                  <i class="fa-solid fa-trash-can mr-1"></i>移除
-                </button>
+                <div class="flex items-center gap-2">
+                  <button type="button" @click="copyCustomBentoRow(row)"
+                    class="glass-btn text-slate-800 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1">
+                    <i class="fa-solid fa-copy"></i><span>複製</span>
+                  </button>
+                  <button type="button" @click="removeCustomBentoRow(index)" x-show="clientForm.customBentos.length > 1"
+                    class="glass-btn-danger text-white px-2 py-1 rounded-lg text-[11px] font-bold">
+                    <i class="fa-solid fa-trash-can mr-1"></i>移除
+                  </button>
+                </div>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -574,10 +586,28 @@
           </div>
         </div>
 
+        <!-- 編輯模式提示橫幅 -->
+        <template x-if="editingOrderId">
+          <div class="flex items-center justify-between px-4 py-3 bg-amber-50/90 border border-amber-300 rounded-xl">
+            <div class="flex items-center gap-2 text-amber-800">
+              <i class="fa-solid fa-pen-to-square text-amber-500 text-sm"></i>
+              <div>
+                <p class="text-xs font-black">編輯模式｜正在修改訂單</p>
+                <p class="text-[10px] font-mono text-amber-600 mt-0.5" x-text="editingOrderId"></p>
+              </div>
+            </div>
+            <button @click="editingOrderId = null"
+              class="text-[11px] text-slate-500 hover:text-rose-600 font-bold flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-rose-50 transition-all">
+              <i class="fa-solid fa-xmark"></i> 取消編輯
+            </button>
+          </div>
+        </template>
+
         <button @click="submitOrder()"
-          class="glass-btn-primary text-white py-3.5 px-6 rounded-xl font-black text-sm flex items-center justify-center space-x-2 w-full shadow-lg">
-          <i class="fa-solid fa-paper-plane"></i>
-          <span>確認訂單</span>
+          class="glass-btn-primary text-white py-3.5 px-6 rounded-xl font-black text-sm flex items-center justify-center gap-2 w-full shadow-lg"
+          :class="editingOrderId ? 'bg-gradient-to-r from-amber-500/80 to-orange-500/80' : ''">
+          <i :class="editingOrderId ? 'fa-solid fa-rotate' : 'fa-solid fa-paper-plane'"></i>
+          <span x-text="editingOrderId ? '更新訂單（同步後台）' : '確認訂單'"></span>
         </button>
       </div>
     </section>
@@ -612,7 +642,13 @@
                 <p class="text-[10px] text-slate-400 mt-0.5" x-text="'保留至：' + getHistoryExpireLabel(order)"></p>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] bg-green-100 text-green-800"
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black"
+                  :class="{
+                    'bg-red-100 text-red-800': order.status === '未接單',
+                    'bg-yellow-100 text-yellow-800': order.status === '已接單',
+                    'bg-blue-100 text-blue-800': order.status === '製作中',
+                    'bg-emerald-100 text-emerald-800': order.status === '已送出'
+                  }"
                   x-text="order.status"></span>
                 <button type="button" @click="editHistoryOrder(order)" title="編輯此筆歷史紀錄"
                   class="w-7 h-7 rounded-lg bg-white/70 border border-slate-200 text-slate-600 hover:text-green-700 hover:border-green-300 transition-all">
@@ -629,6 +665,8 @@
               <p>主要負責人：<span class="text-slate-800" x-text="order.userName"></span></p>
               <p>發送時間：<span class="text-slate-800 font-mono" x-text="order.timestamp"></span></p>
               <p>指定送達：<span class="text-slate-800" x-text="order.deliveryTime || '儘速送達'"></span></p>
+              <p>餐具需求：<span class="text-slate-800" x-text="order.needTableware ? '需要' : '不需要'"></span></p>
+              <p>收據需求：<span class="text-slate-800" x-text="order.needReceipt ? '需要' : '不需要'"></span></p>
             </div>
             <div class="bg-white/40 p-2 rounded-xl border border-slate-100 space-y-1">
               <template x-for="(it, idx) in order.items" :key="idx">
@@ -669,6 +707,9 @@
         orders: [],
         userHistory: [],
         mainDishes: [],
+
+        // 編輯模式：記錄正在修改的原始訂單 ID（null 表示新增模式）
+        editingOrderId: null,
 
         toast: { show: false, message: '', type: 'success' },
 
@@ -757,10 +798,25 @@
 
           const personalHistory = localStorage.getItem('vege_bento_user_history');
           this.userHistory = this.cleanupUserHistory(personalHistory ? JSON.parse(personalHistory) : []);
+          this.syncUserHistoryWithOrders();
         },
 
         saveUserHistory() {
           localStorage.setItem('vege_bento_user_history', JSON.stringify(this.userHistory));
+        },
+
+        syncUserHistoryWithOrders() {
+          const orderMap = new Map(this.orders.map(order => [order.id, order]));
+          this.userHistory = this.userHistory.map(order => {
+            const remote = orderMap.get(order.id);
+            return remote ? {
+              ...order,
+              status: remote.status,
+              needTableware: remote.needTableware,
+              needReceipt: remote.needReceipt
+            } : order;
+          });
+          this.saveUserHistory();
         },
 
         cleanupUserHistory(history) {
@@ -829,13 +885,22 @@
           this.activeTab = 'client';
         },
 
-        deleteHistoryOrder(orderId) {
+        async deleteHistoryOrder(orderId) {
+          // 從個人歷史紀錄移除
           this.userHistory = this.userHistory.filter(order => order.id !== orderId);
           this.saveUserHistory();
-          this.showToast('已刪除此筆歷史紀錄。', 'warning');
+          // 同步刪除主資料庫（Supabase + LocalStorage），後台即時同步
+          await VegeBentoDB.deleteOrder(orderId);
+          this.orders = this.orders.filter(o => o.id !== orderId);
+          // 若此單正處於編輯模式，一併清除
+          if (this.editingOrderId === orderId) this.editingOrderId = null;
+          this.showToast('已刪除此筆訂單，後台已同步移除。', 'warning');
         },
 
         editHistoryOrder(order) {
+          // 記錄原始訂單 ID，送出時舊單將被刪除並以新單取代
+          this.editingOrderId = order.id;
+
           this.clientForm.unit = order.unit || '';
           this.clientForm.userName = order.userName || '';
           this.clientForm.needTableware = !!order.needTableware;
@@ -856,7 +921,7 @@
             };
           }
           this.closeHistory();
-          this.showToast('已將歷史紀錄帶回點餐表單，可修改後重新送出。');
+          this.showToast('已帶回歷史訂單，修改後按「更新訂單」即可同步後台。', 'warning');
         },
 
         historyItemToFormRow(item, fallbackName) {
@@ -881,9 +946,60 @@
 
         addCustomBentoRow() {
           const nextIndex = this.clientForm.customBentos.length + 1;
-          const newRow = { name: `同仁 ${nextIndex}`, price: '80', otherPrice: '', vegType: '全素', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' };
+          const newRow = { name: `同仁 ${nextIndex}`, price: '80', otherPrice: '', vegType: '全素', riceType: '', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' };
           this.clientForm.customBentos.push(newRow);
           this.filterMainDishes(newRow);
+        },
+
+        copyCustomBentoRow(row) {
+          const nextIndex = this.clientForm.customBentos.length + 1;
+          const newRow = {
+            name: row.name ? `${row.name} 複製` : `同仁 ${nextIndex}`,
+            price: row.price,
+            otherPrice: row.otherPrice,
+            vegType: row.vegType,
+            riceType: row.riceType,
+            rice: row.rice,
+            mainDish: row.mainDish,
+            dislikes: Array.isArray(row.dislikes) ? [...row.dislikes] : [],
+            otherDislike: row.otherDislike
+          };
+          if (!newRow.name.trim()) newRow.name = `同仁 ${nextIndex}`;
+          const available = this.getAvailableDishesForPrice(newRow);
+          newRow.mainDish = available.some(dish => dish.name === newRow.mainDish)
+            ? newRow.mainDish
+            : (available[0]?.name || '');
+          this.clientForm.customBentos.push(newRow);
+        },
+
+        copyAllCustomBentos() {
+          if (this.clientForm.customBentos.length === 0) {
+            this.showToast('目前沒有可複製的客製餐點。', 'warning');
+            return;
+          }
+          const originalCount = this.clientForm.customBentos.length;
+          const copies = this.clientForm.customBentos.map((row, idx) => {
+            const copyIndex = originalCount + idx + 1;
+            return {
+              name: row.name ? `${row.name} 複製` : `同仁 ${copyIndex}`,
+              price: row.price,
+              otherPrice: row.otherPrice,
+              vegType: row.vegType,
+              riceType: row.riceType,
+              rice: row.rice,
+              mainDish: row.mainDish,
+              dislikes: Array.isArray(row.dislikes) ? [...row.dislikes] : [],
+              otherDislike: row.otherDislike
+            };
+          });
+          copies.forEach(row => {
+            const available = this.getAvailableDishesForPrice(row);
+            row.mainDish = available.some(dish => dish.name === row.mainDish)
+              ? row.mainDish
+              : (available[0]?.name || '');
+            this.clientForm.customBentos.push(row);
+          });
+          this.showToast(`已複製 ${originalCount} 筆客製餐點。`, 'success');
         },
 
         removeCustomBentoRow(index) {
@@ -953,6 +1069,15 @@
             }
           }
 
+          // ── 編輯模式：先刪除舊單，再以新 ID 建立更新後的訂單 ──
+          const wasEditing = !!this.editingOrderId;
+          if (wasEditing) {
+            await VegeBentoDB.deleteOrder(this.editingOrderId);
+            this.orders = this.orders.filter(o => o.id !== this.editingOrderId);
+            this.userHistory = this.userHistory.filter(o => o.id !== this.editingOrderId);
+            this.editingOrderId = null;
+          }
+
           let items = [];
           if (!this.clientForm.isCustomized) {
             const priceVal = this.clientForm.singleBento.price === 'other' ? this.clientForm.singleBento.otherPrice : this.clientForm.singleBento.price;
@@ -1018,7 +1143,10 @@
           this.userHistory.unshift(newOrder);
           this.userHistory = this.cleanupUserHistory(this.userHistory);
 
-          this.showToast('素食餐盒訂單發送成功！已同步至雲端資料庫。', 'success');
+          this.showToast(
+            wasEditing ? '訂單已成功更新！後台看板已同步最新內容。' : '素食餐盒訂單發送成功！已同步至雲端資料庫。',
+            'success'
+          );
 
           // 表單初始化重置
           this.clientForm.globalNote = '';

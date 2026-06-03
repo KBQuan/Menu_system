@@ -198,6 +198,24 @@ const VegeBentoDB = {
     localStorage.setItem('vege_bento_orders', JSON.stringify(orders));
   },
 
+  async deleteOrder(id) {
+    if (isSupabaseActive) {
+      try {
+        const { error } = await supabaseClient
+          .from('vege_bento_orders')
+          .delete()
+          .eq('id', String(id));
+        if (error) console.error('Supabase deleteOrder error:', error);
+      } catch (err) {
+        console.error('Supabase deleteOrder exception:', err);
+      }
+    }
+
+    const orders = this.getLocalOrders();
+    const filtered = orders.filter(o => o.id !== id);
+    localStorage.setItem('vege_bento_orders', JSON.stringify(filtered));
+  },
+
   async clearAllOrders() {
     if (isSupabaseActive) {
       try {
