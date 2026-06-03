@@ -203,6 +203,13 @@
             <i class="fa-solid fa-cloud-arrow-up"></i>
             <span>本機資料匯入雲端</span>
           </button>
+          <input id="ordersImportFile" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" class="hidden"
+            onchange="(async function(f){ if(!f.files || f.files.length===0) return; try{ const res = await VegeBentoDB.importOrdersFromFile(f.files[0]); alert('匯入完成：' + (res.inserted || 0) + ' 筆 (來源：' + res.source + ')'); }catch(e){ alert('匯入失敗: ' + (e.message || e)); } })(this)" />
+          <button onclick="document.getElementById('ordersImportFile').click()"
+            class="glass-btn text-xs font-black px-3.5 py-2 rounded-xl flex items-center space-x-1.5 text-slate-700 hover:scale-105 active:scale-95 transition-all shadow-sm border border-slate-200">
+            <i class="fa-solid fa-file-import"></i>
+            <span>匯入訂單 (CSV/TSV)</span>
+          </button>
         </div>
       </div>
 
@@ -262,7 +269,10 @@
                     <span class="text-xs bg-brand-600 text-white font-black px-2 py-0.5 rounded-md"
                       x-text="order.id"></span>
                     <h4 class="text-sm font-black text-slate-800" x-text="order.unit"></h4>
-                    <span class="text-xs text-slate-500 font-medium" x-text="'(聯絡人: ' + order.userName + ')'"></span>
+                    <div class="space-y-1 text-xs text-slate-500">
+                      <div x-text="'(聯絡人: ' + order.userName + ')' "></div>
+                      <div x-text="'電話: ' + (order.userPhone || '未提供')"></div>
+                    </div>
                   </div>
                   <div class="flex items-center space-x-3">
                     <span class="text-[11px] text-slate-600 font-bold" x-text="'下單: ' + order.timestamp"></span>
@@ -477,6 +487,7 @@
                       <td class="px-4 py-3">
                         <div class="font-black text-slate-900" x-text="order.unit"></div>
                         <div class="text-xs text-slate-500 mt-1">聯絡人：<span x-text="order.userName"></span></div>
+                        <div class="text-xs text-slate-500">電話：<span x-text="order.userPhone || '未提供'"></span></div>
                         <span class="inline-flex mt-2 px-2 py-0.5 rounded-full bg-slate-100 text-xs font-bold"
                           x-text="order.isCustomized ? '客製單' : '統一單'"></span>
                       </td>
@@ -1137,9 +1148,11 @@
 
         get filteredOrders() {
           return this.orders.filter(order => {
-            const query = this.orderQuery.trim().toLowerCase();
+              const query = this.orderQuery.trim().toLowerCase();
             const statusMatch = this.orderStatusFilter === 'all' || order.status === this.orderStatusFilter;
-            const queryMatch = !query || order.unit.toLowerCase().includes(query) || order.userName.toLowerCase().includes(query);
+            const queryMatch = !query || order.unit.toLowerCase().includes(query)
+              || order.userName.toLowerCase().includes(query)
+              || (order.userPhone || '').toLowerCase().includes(query);
             return statusMatch && queryMatch;
           });
         },

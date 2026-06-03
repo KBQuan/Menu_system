@@ -129,43 +129,51 @@ const VegeBentoDB = {
           .from('vege_bento_orders')
           .select('*')
           .order('created_at', { ascending: false });
-        
-        if (!error && data) {
-          // 將資料欄位對應回 Alpine.js 所預期的駝峰命名法
-          const cloudOrders = data.map(ord => ({
-            id: ord.id,
-            unit: ord.unit,
-            userName: ord.user_name,
-            needTableware: ord.need_tableware,
-            needReceipt: ord.need_receipt || false,
-            isCustomized: ord.is_customized,
-            deliveryTime: ord.delivery_time,
-            deliveryAddress: ord.delivery_address,
-            timestamp: ord.timestamp,
-            createdAt: ord.created_at,
-            status: ord.status,
-            totalAmount: ord.total_amount,
-            note: ord.note,
-            items: ord.items
-          }));
-          return this.mergeOrders(cloudOrders, this.getLocalOrders());
+
+
+
+        if (error) {
+          console.error('Supabase getOrders error:', error);
+          return this.getLocalOrders();
         }
-        console.error('Supabase getOrders error:', error);
+
+        // Map DB snake_case → front-end camelCase
+        return (data || []).map(row => ({
+          id: row.id,
+          unit: row.unit,
+          userName: row.user_name,
+          userPhone: row.user_phone,
+          isCustomized: row.is_customized,
+          needTableware: row.need_tableware,
+          needReceipt: row.need_receipt,
+          deliveryTime: row.delivery_time,
+          deliveryAddress: row.delivery_address,
+          note: row.note,
+          totalAmount: row.total_amount,
+          status: row.status,
+          items: row.items,
+          timestamp: row.timestamp,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at
+        }));
       } catch (err) {
-        console.error('Supabase getOrders exception:', err);
+        console.error('Supabase 讀取訂單失敗:', err);
+        return this.getLocalOrders();
       }
     }
-    
+
     return this.getLocalOrders();
   },
 
   async saveOrder(order) {
+    // 儲存到 Supabase（若啟用），並回傳伺服器結果；否則只更新本地備援
     if (isSupabaseActive) {
       try {
         const payload = {
           id: String(order.id),
           unit: order.unit,
           user_name: order.userName,
+          user_phone: order.userPhone || '',
           need_tableware: order.needTableware,
           need_receipt: order.needReceipt || false,
           is_customized: order.isCustomized,
@@ -178,16 +186,27 @@ const VegeBentoDB = {
           note: order.note || '',
           items: order.items
         };
-        const { error } = await supabaseClient
+
+        const { data, error } = await supabaseClient
           .from('vege_bento_orders')
           .upsert(payload);
-        if (error) console.error('Supabase saveOrder error:', error);
+
+        if (error) throw error;
+
+        // 更新本地備援以反映最新雲端資料
+        const orders = this.getLocalOrders();
+        const index = orders.findIndex(o => o.id === order.id);
+        if (index > -1) orders[index] = order; else orders.push(order);
+        localStorage.setItem('vege_bento_orders', JSON.stringify(orders));
+
+        return data;
       } catch (err) {
-        console.error('Supabase saveOrder exception:', err);
+        console.error('Supabase 寫入訂單失敗，啟用 LocalStorage 備援:', err);
+        // 繼續走本地備援流程
       }
     }
-    
-    // 更新本地
+
+    // 本地儲存（降級）
     const orders = this.getLocalOrders();
     const index = orders.findIndex(o => o.id === order.id);
     if (index > -1) {
@@ -196,24 +215,32 @@ const VegeBentoDB = {
       orders.push(order);
     }
     localStorage.setItem('vege_bento_orders', JSON.stringify(orders));
+    return orders;
   },
 
   async deleteOrder(id) {
     if (isSupabaseActive) {
       try {
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from('vege_bento_orders')
           .delete()
           .eq('id', String(id));
-        if (error) console.error('Supabase deleteOrder error:', error);
+
+        if (error) throw error;
+        // 同步本地
+        const orders = this.getLocalOrders();
+        const filtered = orders.filter(o => o.id !== id);
+        localStorage.setItem('vege_bento_orders', JSON.stringify(filtered));
+        return data;
       } catch (err) {
-        console.error('Supabase deleteOrder exception:', err);
+        console.error('Supabase 刪除訂單失敗:', err);
       }
     }
 
     const orders = this.getLocalOrders();
     const filtered = orders.filter(o => o.id !== id);
     localStorage.setItem('vege_bento_orders', JSON.stringify(filtered));
+    return filtered;
   },
 
   async clearAllOrders() {
@@ -397,5 +424,112 @@ const VegeBentoDB = {
       announcements: localAnnouncements.length,
       settings: localSettings ? 1 : 0
     };
-  }
+  },
+
+  // 匯入訂單檔案 (CSV / TSV) 到 Supabase（或 LocalStorage 作為備援）
+  async importOrdersFromFile(file) {
+    if (!file) throw new Error('No file provided');
+
+    const readText = (f) => new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = (e) => reject(e);
+      fr.readAsText(f);
+    });
+
+    const text = await readText(file);
+    if (!text || String(text).trim() === '') throw new Error('File is empty');
+
+    // 簡單判斷分隔符：若為 .tsv 或檔案內含 tab 而非逗號，視為 TSV
+    const isTSV = file.name.toLowerCase().endsWith('.tsv') || (text.indexOf('\t') !== -1 && text.indexOf(',') === -1);
+    const delim = isTSV ? '\t' : ',';
+
+    const lines = String(text).split(/\r\n|\n/).filter(l => l.trim() !== '');
+    if (lines.length < 2) throw new Error('No data rows found in file');
+
+    const rawHeaders = lines[0].split(delim).map(h => h.trim());
+    const headerPattern = /^[A-Za-z0-9_-]+$/;
+    // validate headers
+    for (const h of rawHeaders) {
+      const norm = h.replace(/\s+/g, '_').replace(/[^A-Za-z0-9_-]/g, '');
+      if (!headerPattern.test(norm)) throw new Error('Invalid header name: ' + h);
+    }
+
+    const toSnake = (s) => String(s || '').trim().replace(/\s+/g, '_')
+      .replace(/([A-Z])/g, '_$1').replace(/__+/g, '_').toLowerCase().replace(/^_/, '');
+
+    const headers = rawHeaders.map(h => toSnake(h));
+
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(delim).map(c => c.trim());
+      if (cols.length === 1 && headers.length > 1) {
+        // tolerate single-column rows (skip)
+        continue;
+      }
+      const obj = {};
+      for (let j = 0; j < headers.length; j++) {
+        const key = headers[j];
+        let val = cols[j] !== undefined ? cols[j] : '';
+        if (['need_tableware', 'need_receipt', 'is_customized'].includes(key)) {
+          const v = String(val).toLowerCase();
+          obj[key] = (v === '1' || v === 'true' || v === 'yes' || v === 'y');
+        } else if (key === 'items') {
+          try {
+            obj[key] = val ? JSON.parse(val) : [];
+          } catch (err) {
+            // naive fallback: try splitting by ';' into minimal item objects
+            if (!val) obj[key] = [];
+            else obj[key] = val.split(';').map(s => ({ name: s.trim(), quantity: 1 }));
+          }
+        } else if (key === 'total_amount') {
+          obj[key] = val === '' ? 0 : Number(val);
+        } else {
+          obj[key] = val;
+        }
+      }
+      // ensure an id
+      if (!obj.id) obj.id = 'imp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      rows.push(obj);
+    }
+
+    if (rows.length === 0) throw new Error('No valid rows parsed');
+
+    if (!isSupabaseActive) {
+      // fallback: merge into local storage
+      const local = this.getLocalOrders();
+      for (const r of rows) {
+        const order = {
+          id: String(r.id),
+          unit: r.unit || '',
+          userName: r.user_name || r.userName || '',
+          userPhone: r.user_phone || r.userPhone || '',
+          isCustomized: !!r.is_customized,
+          needTableware: !!r.need_tableware,
+          needReceipt: !!r.need_receipt,
+          deliveryTime: r.delivery_time || r.deliveryTime || '',
+          deliveryAddress: r.delivery_address || r.deliveryAddress || '',
+          note: r.note || '',
+          totalAmount: r.total_amount || r.totalAmount || 0,
+          status: r.status || '未接單',
+          items: r.items || [],
+          timestamp: r.timestamp || new Date().toISOString(),
+          createdAt: r.created_at || null,
+          updatedAt: r.updated_at || null
+        };
+        local.push(order);
+      }
+      localStorage.setItem('vege_bento_orders', JSON.stringify(local));
+      return { inserted: rows.length, source: 'local' };
+    }
+
+    try {
+      const { data, error } = await supabaseClient.from('vege_bento_orders').upsert(rows);
+      if (error) throw error;
+      return { inserted: Array.isArray(data) ? data.length : rows.length, source: 'supabase', data };
+    } catch (err) {
+      console.error('Supabase import error:', err);
+      throw err;
+    }
+  },
 };

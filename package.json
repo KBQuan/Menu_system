@@ -1,0 +1,13 @@
+{
+  "name": "vegebento-import-test",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test-import": "node samples/test_import.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "csv-parse": "^5.0.0"
+  }
+}
