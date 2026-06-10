@@ -102,42 +102,45 @@
     </div>
 
     <div x-show="!isAdminAuthenticated" class="max-w-md mx-auto my-12" x-cloak>
-      <div class="glass-panel rounded-3xl p-8 space-y-6 shadow-xl">
-        <div class="text-center space-y-2">
-          <div class="inline-flex bg-gradient-to-tr from-brand-500 to-green-700 text-white p-4 rounded-2xl shadow-md"><i
-              class="fa-solid fa-lock text-2xl"></i></div>
+      <div class="glass-panel rounded-3xl p-8 space-y-6 shadow-xl text-center">
+        <div class="space-y-2">
+          <!-- 圖示依階段與輸入狀態顯示 -->
+          <div class="inline-flex p-4 bg-gradient-to-tr from-brand-500 to-green-700 text-white rounded-2xl shadow-md transition-all duration-300">
+            <i class="fa-solid fa-grid-2-plus text-2xl"></i>
+          </div>
           <h3 class="text-xl font-black text-slate-900">管理者登入</h3>
-          <p class="text-xs text-slate-600 font-medium">請輸入管理者憑證以進入後台管理系統</p>
+          <p class="text-xs text-slate-500 font-semibold">請依序點選 3 位顏色密碼解鎖控制台</p>
         </div>
-        <form @submit.prevent="login()" class="space-y-4">
-          <div class="space-y-1">
-            <label class="block text-xs font-bold text-slate-700">管理員帳號</label>
-            <div class="relative rounded-xl">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i
-                  class="fa-solid fa-user text-slate-500 text-xs"></i></div>
-              <input type="text" x-model="loginUsername" placeholder="請輸入帳號" required
-                class="block w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs font-medium">
+
+        <!-- 輸入指示器 -->
+        <div class="flex justify-center items-center gap-4 py-3">
+          <template x-for="i in [0, 1, 2]">
+            <div class="w-11 h-11 rounded-full transition-all duration-300 flex items-center justify-center shadow-inner relative border border-slate-200"
+              :class="inputColors[i] ? inputColors[i].class + ' scale-110 shadow-md border-transparent' : 'bg-slate-50 border-2 border-dashed border-slate-300'">
+              <span x-show="!inputColors[i]" class="text-slate-400 font-black text-xs font-mono" x-text="i+1"></span>
+              <i x-show="inputColors[i]" class="fa-solid fa-check text-white text-xs drop-shadow"></i>
             </div>
-          </div>
-          <div class="space-y-1">
-            <label class="block text-xs font-bold text-slate-700">管理員密碼</label>
-            <div class="relative rounded-xl">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i
-                  class="fa-solid fa-key text-slate-500 text-xs"></i></div>
-              <input type="password" x-model="loginPassword" placeholder="請輸入密碼" required
-                class="block w-full pl-10 pr-4 py-2.5 rounded-xl glass-input text-xs font-medium">
-            </div>
-          </div>
-          <div x-show="loginError" class="text-red-600 text-xs font-bold text-center" x-text="loginError" x-transition>
-          </div>
-          <button type="submit" class="w-full glass-btn-primary text-white py-3 px-4 rounded-xl font-black text-xs">
-            <i class="fa-solid fa-right-to-bracket"></i><span>安全登入</span>
+          </template>
+        </div>
+
+        <!-- 顏色選擇九宮格 (九個顏色) -->
+        <div class="grid grid-cols-3 gap-3 max-w-[280px] mx-auto">
+          <template x-for="color in colorOptions" :key="color.name">
+            <button @click="selectColor(color)"
+              :class="color.class"
+              class="aspect-square w-full rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 border border-black/10 focus:outline-none relative group"
+              :title="color.name">
+              <span class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white bg-black/30 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity" x-text="color.name"></span>
+            </button>
+          </template>
+        </div>
+
+        <div class="flex justify-between items-center pt-2 max-w-[280px] mx-auto text-xs">
+          <button @click="inputColors = []"
+            class="text-slate-500 hover:text-rose-600 font-bold flex items-center gap-1 transition-all">
+            <i class="fa-solid fa-rotate-left"></i><span>清除重試</span>
           </button>
-        </form>
-        <div class="border-t border-white/40 pt-4 text-center flex flex-col items-center space-y-2">
-          <span
-            class="text-[10px] text-slate-700 bg-white/40 px-2.5 py-1 rounded-md font-extrabold border border-white/50">測試用預設帳密：<span
-              class="font-black text-brand-800">123456789</span></span>
+          <span class="text-[10px] text-slate-400 bg-white/40 px-2 py-0.5 rounded border border-white/50">提示：黃 ➔ 紅 ➔ 紅</span>
         </div>
       </div>
     </div>
@@ -189,7 +192,7 @@
           <button @click="adminTab = 'settings'"
             :class="adminTab === 'settings' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
-            <i class="fa-solid fa-sliders"></i><span>系統設置</span>
+            <i class="fa-solid fa-key"></i><span>密碼設置區</span>
           </button>
         </nav>
         <div class="flex flex-wrap gap-2 mb-2">
@@ -270,7 +273,6 @@
                       x-text="order.id"></span>
                     <h4 class="text-sm font-black text-slate-800" x-text="order.unit"></h4>
                     <div class="space-y-1 text-xs text-slate-500">
-                      <div x-text="'(聯絡人: ' + order.userName + ')' "></div>
                       <div x-text="'電話: ' + (order.userPhone || '未提供')"></div>
                     </div>
                   </div>
@@ -425,6 +427,17 @@
                       x-text="'預算限制: ' + getPriceRuleLabel(dish)"></span>
                   </div>
                   <div class="flex items-center space-x-1">
+                    <!-- 已售完快捷按鈕 -->
+                    <button x-show="dish.available" @click="markDishSoldOut(dish)"
+                      class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-700 border border-red-300/50 text-[11px] font-black hover:bg-red-500/20 transition-all flex items-center gap-1"
+                      title="標記今日已售完（即時下架）">
+                      <i class="fa-solid fa-ban text-[10px]"></i>售完
+                    </button>
+                    <button x-show="!dish.available" @click="markDishAvailable(dish)"
+                      class="px-2.5 py-1 rounded-lg bg-green-500/10 text-green-700 border border-green-300/50 text-[11px] font-black hover:bg-green-500/20 transition-all flex items-center gap-1"
+                      title="恢復上架供應">
+                      <i class="fa-solid fa-circle-check text-[10px]"></i>恢復
+                    </button>
                     <button @click="editDish(dish)" class="p-2 text-slate-700 hover:text-brand-700" title="編輯項目"><i
                         class="fa-regular fa-pen-to-square"></i></button>
                     <button @click="triggerDeleteDish(dish.id)" class="p-2 text-red-500 hover:text-red-700"
@@ -486,8 +499,7 @@
                       <td class="px-4 py-3 font-black text-brand-700" x-text="order.id"></td>
                       <td class="px-4 py-3">
                         <div class="font-black text-slate-900" x-text="order.unit"></div>
-                        <div class="text-xs text-slate-500 mt-1">聯絡人：<span x-text="order.userName"></span></div>
-                        <div class="text-xs text-slate-500">電話：<span x-text="order.userPhone || '未提供'"></span></div>
+                        <div class="text-xs text-slate-500 mt-1">電話：<span x-text="order.userPhone || '未提供'"></span></div>
                         <span class="inline-flex mt-2 px-2 py-0.5 rounded-full bg-slate-100 text-xs font-bold"
                           x-text="order.isCustomized ? '客製單' : '統一單'"></span>
                       </td>
@@ -653,6 +665,75 @@
 
       <div x-show="adminTab === 'settings'" class="grid grid-cols-1 lg:grid-cols-2 gap-8" x-transition>
         <div class="space-y-6">
+          <!-- 色彩解鎖密碼設定 -->
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
+              <i class="fa-solid fa-key text-brand-600"></i><span>色彩解鎖密碼設定</span>
+            </h4>
+            <p class="text-xs text-slate-600">請設定登入時的 3 位顏色密碼順序（點選後立即自動儲存並同步至雲端資料庫）</p>
+            <div class="space-y-4 bg-white/40 border border-white/60 p-4 rounded-2xl">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-500 mb-1">第一位顏色</label>
+                  <select x-model="settings.colorPassword[0]" @change="queueSettingsSave()"
+                    class="w-full text-xs font-bold rounded-xl px-2 py-2 border bg-white focus:outline-none">
+                    <option value="紅">紅</option>
+                    <option value="橘">橘</option>
+                    <option value="黃">黃</option>
+                    <option value="綠">綠</option>
+                    <option value="藍">藍</option>
+                    <option value="靛">靛</option>
+                    <option value="紫">紫</option>
+                    <option value="粉">粉</option>
+                    <option value="灰">灰</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-500 mb-1">第二位顏色</label>
+                  <select x-model="settings.colorPassword[1]" @change="queueSettingsSave()"
+                    class="w-full text-xs font-bold rounded-xl px-2 py-2 border bg-white focus:outline-none">
+                    <option value="紅">紅</option>
+                    <option value="橘">橘</option>
+                    <option value="黃">黃</option>
+                    <option value="綠">綠</option>
+                    <option value="藍">藍</option>
+                    <option value="靛">靛</option>
+                    <option value="紫">紫</option>
+                    <option value="粉">粉</option>
+                    <option value="灰">灰</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-500 mb-1">第三位顏色</label>
+                  <select x-model="settings.colorPassword[2]" @change="queueSettingsSave()"
+                    class="w-full text-xs font-bold rounded-xl px-2 py-2 border bg-white focus:outline-none">
+                    <option value="紅">紅</option>
+                    <option value="橘">橘</option>
+                    <option value="黃">黃</option>
+                    <option value="綠">綠</option>
+                    <option value="藍">藍</option>
+                    <option value="靛">靛</option>
+                    <option value="紫">紫</option>
+                    <option value="粉">粉</option>
+                    <option value="灰">灰</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 當前設定預覽 -->
+              <div class="mt-4 flex items-center justify-between border-t border-slate-200/50 pt-3">
+                <span class="text-xs font-bold text-slate-700">設定密碼順序：</span>
+                <div class="flex gap-2">
+                  <template x-for="name in settings.colorPassword" :key="Math.random() + name">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-black text-white"
+                      :class="colorOptions.find(c => c.name === name)?.class || 'bg-slate-400'"
+                      x-text="name"></span>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="glass-panel rounded-3xl p-6 space-y-4">
             <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
               <i class="fa-solid fa-text-height text-brand-600"></i><span>文字大小設置</span>
@@ -800,9 +881,18 @@
     function bentoAdminApp() {
       return {
         isAdminAuthenticated: false,
-        loginUsername: '',
-        loginPassword: '',
-        loginError: '',
+        inputColors: [],
+        colorOptions: [
+          { name: '紅', class: 'bg-red-500' },
+          { name: '橘', class: 'bg-orange-500' },
+          { name: '黃', class: 'bg-yellow-400' },
+          { name: '綠', class: 'bg-green-500' },
+          { name: '藍', class: 'bg-blue-500' },
+          { name: '靛', class: 'bg-indigo-500' },
+          { name: '紫', class: 'bg-purple-500' },
+          { name: '粉', class: 'bg-pink-500' },
+          { name: '灰', class: 'bg-slate-500' }
+        ],
         adminTab: 'orders',
         orders: [],
         mainDishes: [],
@@ -826,7 +916,8 @@
           receiptByDefault: false,
           defaultDeliveryAddress: '',
           deliveryAddressHint: '',
-          requireDeliveryAddress: false
+          requireDeliveryAddress: false,
+          colorPassword: ['黃', '紅', '紅']
         },
 
         async init() {
@@ -864,14 +955,25 @@
           }, 5000);
         },
 
-        login() {
-          if (this.loginUsername === '123456789' && this.loginPassword === '123456789') {
-            this.isAdminAuthenticated = true;
-            this.loginError = '';
-            sessionStorage.setItem('vege_admin_auth', 'true');
-            this.showToast('管理者身分認證成功！');
-          } else {
-            this.loginError = '認證失敗：帳號或密碼輸入錯誤。';
+        selectColor(color) {
+          if (this.inputColors.length >= 3) return;
+          this.inputColors.push(color);
+
+          if (this.inputColors.length === 3) {
+            // 延遲 300 毫秒以讓使用者看見最後一個點選的顏色指示燈亮起
+            setTimeout(() => {
+              const sequence = this.inputColors.map(c => c.name).join('');
+              const correctSequence = (this.settings.colorPassword || ['黃', '紅', '紅']).join('');
+              if (sequence === correctSequence) {
+                this.isAdminAuthenticated = true;
+                sessionStorage.setItem('vege_admin_auth', 'true');
+                this.showToast('管理者色彩密碼解鎖成功！歡迎進入後台。');
+                this.inputColors = [];
+              } else {
+                this.showToast('密碼錯誤！請重新點選。', 'danger');
+                this.inputColors = [];
+              }
+            }, 300);
           }
         },
 
@@ -937,6 +1039,10 @@
           if (dbSettings) {
             this.isLoadingSettings = true;
             this.settings = { ...this.settings, ...dbSettings };
+            // 如果資料庫中還沒有 colorPassword，給予預設值
+            if (!this.settings.colorPassword || !Array.isArray(this.settings.colorPassword)) {
+              this.settings.colorPassword = ['黃', '紅', '紅'];
+            }
             // 載入設定後同步根字級
             document.documentElement.style.fontSize = this.settings.adminFontSize + 'px';
             this.isLoadingSettings = false;
@@ -994,7 +1100,8 @@
               receiptByDefault: false,
               defaultDeliveryAddress: '',
               deliveryAddressHint: '',
-              requireDeliveryAddress: false
+              requireDeliveryAddress: false,
+              colorPassword: ['黃', '紅', '紅']
             };
             await VegeBentoDB.saveAdminSettings(this.settings);
             this.showToast('所有設置已恢復預設值！');
@@ -1113,6 +1220,20 @@
           }
           await VegeBentoDB.saveDish(dishToSave);
           this.resetEditingDish();
+        },
+
+        // 標記已售完（快速下架）
+        async markDishSoldOut(dish) {
+          dish.available = false;
+          await VegeBentoDB.saveDish(dish);
+          this.showToast(`「${dish.name}」已標記為今日售完！`, 'warning');
+        },
+
+        // 恢復上架供應
+        async markDishAvailable(dish) {
+          dish.available = true;
+          await VegeBentoDB.saveDish(dish);
+          this.showToast(`「${dish.name}」已恢復供應！`);
         },
 
         editDish(dish) { this.editingDish = { ...dish }; },

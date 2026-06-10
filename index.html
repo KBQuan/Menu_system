@@ -52,6 +52,59 @@
     html {
       transition: font-size 0.2s ease;
     }
+
+    /* ── 手機底部 Tab Bar ── */
+    .mobile-tab-bar {
+      display: none;
+    }
+    @media (max-width: 767px) {
+      .mobile-tab-bar {
+        display: flex;
+      }
+      /* 在手機模式底部 Tab 佔位，避免內容被遮住 */
+      body { padding-bottom: 72px; }
+    }
+    .mobile-tab-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 8px 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+      border-radius: 0;
+    }
+    .mobile-tab-btn.active {
+      color: #16a34a;
+    }
+    .mobile-tab-btn i {
+      font-size: 20px;
+      margin-bottom: 1px;
+    }
+    .mobile-tab-btn .badge {
+      position: absolute;
+      top: 6px;
+      right: calc(50% - 18px);
+      background: #16a34a;
+      color: white;
+      font-size: 9px;
+      font-weight: 900;
+      border-radius: 99px;
+      padding: 1px 5px;
+      min-width: 16px;
+      text-align: center;
+    }
+    /* 手機下公告欄移至底部 */
+    @media (max-width: 767px) {
+      .aside-mobile-hide { display: none !important; }
+    }
   </style>
 </head>
 
@@ -101,7 +154,7 @@
         </div>
       </div>
 
-      <nav class="tab-segment">
+      <nav class="tab-segment hidden md:inline-grid">
         <button @click="activeTab = 'client'; showHistoryModal = false"
           :class="['tab-button', activeTab === 'client' ? 'tab-active' : '']"
           class="px-5 py-2 text-sm transition-all duration-200 flex items-center justify-center gap-2">
@@ -132,9 +185,9 @@
     </div>
   </header>
 
-  <main
+  <main x-show="activeTab === 'client'" x-transition.opacity
     class="flex-1 w-full max-w-full mx-auto min-w-0 px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-    <aside class="lg:col-span-4 space-y-6">
+    <aside class="hidden lg:block lg:col-span-4 space-y-6">
       <div class="glass-panel p-5 space-y-4">
         <div class="flex items-center gap-3">
           <span class="text-lg p-2 bg-emerald-500/10 text-emerald-700 rounded-xl font-bold">
@@ -188,7 +241,7 @@
             </span>
             <div>
               <h2 class="font-bold text-base text-slate-900">購基本資訊</h2>
-              <p class="text-xs text-slate-500 font-medium mt-0.5">請確實輸入單位與姓名，以利後台配餐流程</p>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">請確實輸入單位與聯絡電話，以利後台配餐流程</p>
             </div>
           </div>
         </div>
@@ -201,17 +254,21 @@
               class="w-full glass-input rounded-xl px-4 py-3 text-sm font-medium focus:outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">訂購人姓名<span
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">聯絡電話<span
                 class="text-rose-500">*</span></label>
-            <input type="text" x-model="clientForm.userName" placeholder="請輸入您的真實姓名"
-              class="w-full glass-input rounded-xl px-4 py-3 text-sm font-medium focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">聯絡電話</label>
             <input type="tel" x-model="clientForm.userPhone" placeholder="例如：0912-345-678"
               class="w-full glass-input rounded-xl px-4 py-3 text-sm font-medium focus:outline-none">
           </div>
-          <!-- 電子郵件欄位已移除，系統改以聯絡電話為主要聯絡資訊 -->
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+              配送地址 <span class="text-slate-400 font-normal normal-case tracking-normal ml-1">（選填）</span>
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"><i class="fa-solid fa-location-dot"></i></span>
+              <input type="text" x-model="clientForm.deliveryAddress" placeholder="如需外送請填寫地址，可留空"
+                class="w-full glass-input rounded-xl pl-8 pr-3 py-3 text-sm font-medium focus:outline-none">
+            </div>
+          </div>
         </div>
 
         <div
@@ -496,15 +553,7 @@
             </template>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">配送地址</label>
-            <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"><i
-                  class="fa-solid fa-location-dot"></i></span>
-              <input type="text" x-model="clientForm.deliveryAddress" placeholder="彰化縣○○鎮○○路○○號"
-                class="w-full glass-input rounded-xl pl-8 pr-3 py-2.5 text-xs font-medium focus:outline-none">
-            </div>
-          </div>
+
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">總備註說明</label>
             <textarea x-model="clientForm.globalNote" rows="2" placeholder="如：全部外送外盒請綁紅線，或有其他特殊需求..."
@@ -619,6 +668,89 @@
     </section>
   </main>
 
+  <!-- ══ 行內歷史紀錄區（Tab 切換，非 modal） ══ -->
+  <div x-show="activeTab === 'history'" x-transition.opacity
+    class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6"
+    x-cloak>
+    <div class="max-w-2xl mx-auto">
+      <div class="glass-panel rounded-3xl p-6 space-y-4 shadow-xl">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+          <h3 class="font-black text-slate-900 text-base flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-green-600"></i>
+            <span>您的歷史訂購紀錄</span>
+            <span class="text-xs font-medium text-slate-500">(最近 20 筆)</span>
+          </h3>
+          <button @click="activeTab = 'client'"
+            class="text-slate-400 hover:text-slate-700 text-sm px-3 py-1.5 rounded-xl hover:bg-slate-100 font-bold transition-all flex items-center gap-1">
+            <i class="fa-solid fa-arrow-left text-xs"></i> 返回點餐
+          </button>
+        </div>
+
+        <div class="space-y-3 max-h-[65vh] overflow-y-auto pr-1 custom-scrollbar">
+          <template x-if="userHistory.length === 0">
+            <div class="text-center py-16 text-slate-400 space-y-3">
+              <div class="text-4xl"><i class="fa-solid fa-inbox"></i></div>
+              <p class="text-sm font-medium">您在此瀏覽器尚無任何點餐歷史紀錄</p>
+              <button @click="activeTab = 'client'"
+                class="mt-2 glass-btn-primary text-white px-5 py-2.5 rounded-xl text-xs font-bold">
+                前往點餐
+              </button>
+            </div>
+          </template>
+
+          <template x-for="order in userHistory" :key="order.id">
+            <div class="p-4 rounded-2xl bg-white/60 border border-slate-200/60 text-xs space-y-2">
+              <div class="flex justify-between items-center gap-2 font-bold">
+                <div>
+                  <span class="text-slate-900 font-mono text-sm" x-text="order.id"></span>
+                  <p class="text-[10px] text-slate-400 mt-0.5" x-text="'保留至：' + getHistoryExpireLabel(order)"></p>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black"
+                    :class="{
+                      'bg-red-100 text-red-800': order.status === '未接單',
+                      'bg-yellow-100 text-yellow-800': order.status === '已接單',
+                      'bg-blue-100 text-blue-800': order.status === '製作中',
+                      'bg-emerald-100 text-emerald-800': order.status === '已送出'
+                    }"
+                    x-text="order.status"></span>
+                  <button type="button" @click="editHistoryOrder(order)" title="編輯此筆歷史紀錄"
+                    class="w-8 h-8 rounded-xl bg-white/70 border border-slate-200 text-slate-600 hover:text-green-700 hover:border-green-300 transition-all flex items-center justify-center">
+                    <i class="fa-regular fa-pen-to-square"></i>
+                  </button>
+                  <button type="button" @click="deleteHistoryOrder(order.id)" title="刪除此筆歷史紀錄"
+                    class="w-8 h-8 rounded-xl bg-white/70 border border-slate-200 text-slate-600 hover:text-rose-700 hover:border-rose-300 transition-all flex items-center justify-center">
+                    <i class="fa-regular fa-trash-can"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="text-slate-500 grid grid-cols-2 gap-1 font-medium">
+                <p>訂購單位：<span class="text-slate-800" x-text="order.unit"></span></p>
+                <p>主要負責人：<span class="text-slate-800" x-text="order.userName"></span></p>
+                <p>發送時間：<span class="text-slate-800 font-mono" x-text="order.timestamp"></span></p>
+                <p>指定送達：<span class="text-slate-800" x-text="order.deliveryTime || '儘速送達'"></span></p>
+                <p>餐具需求：<span class="text-slate-800" x-text="order.needTableware ? '需要' : '不需要'"></span></p>
+                <p>收據需求：<span class="text-slate-800" x-text="order.needReceipt ? '需要' : '不需要'"></span></p>
+              </div>
+              <div class="bg-white/40 p-2 rounded-xl border border-slate-100 space-y-1">
+                <template x-for="(it, idx) in order.items" :key="idx">
+                  <div class="flex justify-between text-slate-600">
+                    <span x-text="it.summary"></span>
+                    <span class="font-mono font-bold text-slate-900" x-text="'x'+it.count"></span>
+                  </div>
+                </template>
+              </div>
+              <div class="text-right font-bold text-slate-900 pt-1">
+                總計金額：<span class="text-green-600 font-mono text-sm" x-text="'NT$ ' + order.totalAmount"></span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 舊 modal（保留結構但隱藏，維持相容性） -->
   <div x-show="showHistoryModal"
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
     x-cloak>
@@ -696,9 +828,24 @@
     </div>
   </div>
 
-  <footer class="mt-auto border-t border-slate-200/50 bg-white/20 py-4 text-center text-xs font-medium text-slate-500">
+  <footer class="mt-auto border-t border-slate-200/50 bg-white/20 py-4 text-center text-xs font-medium text-slate-500 hidden md:block">
     VegeBento Go! 智慧蔬食體系 © 2026 研發部技術支援
   </footer>
+
+  <!-- ══ 手機底部 Tab Bar ══ -->
+  <nav class="mobile-tab-bar fixed bottom-0 inset-x-0 z-40 bg-white/85 backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
+    <button class="mobile-tab-btn relative" :class="activeTab === 'client' ? 'active' : ''"
+      @click="activeTab = 'client'; showHistoryModal = false">
+      <i class="fa-solid fa-clipboard-list"></i>
+      <span>點餐單</span>
+    </button>
+    <button class="mobile-tab-btn relative" :class="activeTab === 'history' ? 'active' : ''"
+      @click="activeTab = 'history'; showHistoryModal = false">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>歷史紀錄</span>
+      <span class="badge" x-show="userHistory.length > 0" x-text="userHistory.length"></span>
+    </button>
+  </nav>
 
   <script>
     function bentoApp() {
@@ -738,7 +885,7 @@
           vegType: '全素',
           needTableware: false,
           needReceipt: false,
-          deliveryAddress: '彰化縣',
+          deliveryAddress: '',
           isCustomized: false,
           deliveryTimeType: 'ASAP',
           deliveryTimeValue: '12:00',
@@ -884,7 +1031,8 @@
 
         openHistory() {
           this.activeTab = 'history';
-          this.showHistoryModal = true;
+          // 手機以行內顯示，桌面也改為行內 Tab，不再開 modal
+          this.showHistoryModal = false;
         },
 
         closeHistory() {
@@ -1061,12 +1209,12 @@
         },
 
         async submitOrder() {
-          if (!this.clientForm.unit.trim() || !this.clientForm.userName.trim()) {
-            this.showToast('請務必填寫「訂購單位」與「主要訂購人姓名」！', 'danger');
+          if (!this.clientForm.unit.trim()) {
+            this.showToast('請務必填寫「訂購單位」！', 'danger');
             return;
           }
           if (!this.clientForm.userPhone.trim()) {
-            this.showToast('請務必填寫聯絡電話，以利後續通知與配送。', 'danger');
+            this.showToast('請務必填寫「聯絡電話」，以利後續通知與配送。', 'danger');
             return;
           }
           if (!this.clientForm.singleBento.riceType && !this.clientForm.isCustomized) {
