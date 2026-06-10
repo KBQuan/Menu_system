@@ -41,13 +41,16 @@
   <script src="js/db.js"></script>
   <link rel="stylesheet" href="admin.css">
   <style>
-    html { transition: font-size 0.2s ease; }
+    html {
+      transition: font-size 0.2s ease;
+    }
   </style>
 </head>
 
 <body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-cover bg-center bg-fixed"
   style="background-image: url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=2000&auto=format&fit=crop');"
-  x-data="bentoAdminApp()" x-init="init(); $watch('settings.adminFontSize', v => { document.documentElement.style.fontSize = v + 'px'; queueSettingsSave(); }); $watch('settings.clientFontSize', () => queueSettingsSave());">
+  x-data="bentoAdminApp()"
+  x-init="init(); $watch('settings.adminFontSize', v => { document.documentElement.style.fontSize = v + 'px'; queueSettingsSave(); }); $watch('settings.clientFontSize', () => queueSettingsSave());">
   <header class="border-b border-white/20 bg-white/55 backdrop-blur-md shadow-sm sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16 items-center">
@@ -105,7 +108,8 @@
       <div class="glass-panel rounded-3xl p-8 space-y-6 shadow-xl text-center">
         <div class="space-y-2">
           <!-- 圖示依階段與輸入狀態顯示 -->
-          <div class="inline-flex p-4 bg-gradient-to-tr from-brand-500 to-green-700 text-white rounded-2xl shadow-md transition-all duration-300">
+          <div
+            class="inline-flex p-4 bg-gradient-to-tr from-brand-500 to-green-700 text-white rounded-2xl shadow-md transition-all duration-300">
             <i class="fa-solid fa-grid-2-plus text-2xl"></i>
           </div>
           <h3 class="text-xl font-black text-slate-900">管理者登入</h3>
@@ -115,7 +119,8 @@
         <!-- 輸入指示器 -->
         <div class="flex justify-center items-center gap-4 py-3">
           <template x-for="i in [0, 1, 2]">
-            <div class="w-11 h-11 rounded-full transition-all duration-300 flex items-center justify-center shadow-inner relative border border-slate-200"
+            <div
+              class="w-11 h-11 rounded-full transition-all duration-300 flex items-center justify-center shadow-inner relative border border-slate-200"
               :class="inputColors[i] ? inputColors[i].class + ' scale-110 shadow-md border-transparent' : 'bg-slate-50 border-2 border-dashed border-slate-300'">
               <span x-show="!inputColors[i]" class="text-slate-400 font-black text-xs font-mono" x-text="i+1"></span>
               <i x-show="inputColors[i]" class="fa-solid fa-check text-white text-xs drop-shadow"></i>
@@ -126,11 +131,12 @@
         <!-- 顏色選擇九宮格 (九個顏色) -->
         <div class="grid grid-cols-3 gap-3 max-w-[280px] mx-auto">
           <template x-for="color in colorOptions" :key="color.name">
-            <button @click="selectColor(color)"
-              :class="color.class"
+            <button @click="selectColor(color)" :class="color.class"
               class="aspect-square w-full rounded-2xl shadow-sm hover:scale-105 active:scale-95 transition-all duration-150 border border-black/10 focus:outline-none relative group"
               :title="color.name">
-              <span class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white bg-black/30 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity" x-text="color.name"></span>
+              <span
+                class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white bg-black/30 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity"
+                x-text="color.name"></span>
             </button>
           </template>
         </div>
@@ -140,7 +146,8 @@
             class="text-slate-500 hover:text-rose-600 font-bold flex items-center gap-1 transition-all">
             <i class="fa-solid fa-rotate-left"></i><span>清除重試</span>
           </button>
-          <span class="text-[10px] text-slate-400 bg-white/40 px-2 py-0.5 rounded border border-white/50">提示：黃 ➔ 紅 ➔ 紅</span>
+          <span class="text-[10px] text-slate-400 bg-white/40 px-2 py-0.5 rounded border border-white/50">提示：黃 ➔ 紅 ➔
+            紅</span>
         </div>
       </div>
     </div>
@@ -266,7 +273,7 @@
           <div class="space-y-4">
             <template x-for="order in orders" :key="order.id">
               <div class="glass-panel rounded-3xl overflow-hidden shadow-sm transition-all duration-300"
-                   :class="order.status === '\u672a\u63a5\u55ae' ? 'order-pending-alert' : 'border border-white/50'">
+                :class="order.status === '\u672a\u63a5\u55ae' ? 'order-pending-alert' : 'border border-white/50'">
                 <div class="p-4 bg-white/40 border-b border-white/40 flex flex-wrap justify-between items-center gap-2">
                   <div class="flex items-center space-x-2">
                     <span class="text-xs bg-brand-600 text-white font-black px-2 py-0.5 rounded-md"
@@ -306,11 +313,13 @@
                 </div>
 
                 <div class="p-4 bg-white/20 text-xs space-y-3">
-                  <div class="flex flex-wrap justify-between items-center gap-2 text-slate-700 border-b border-white/40 pb-2 font-bold">
+                  <div
+                    class="flex flex-wrap justify-between items-center gap-2 text-slate-700 border-b border-white/40 pb-2 font-bold">
                     <div class="flex flex-wrap items-center gap-2">
                       <span class="flex items-center space-x-1"><i class="fa-solid fa-utensils"></i><span
                           x-text="order.needTableware ? '本訂單【需要】免洗餐具' : '本單【不需要】免洗餐具 (自備環保)'"></span></span>
-                      <span class="flex items-center space-x-1 text-amber-800"><i class="fa-solid fa-file-invoice"></i><span
+                      <span class="flex items-center space-x-1 text-amber-800"><i
+                          class="fa-solid fa-file-invoice"></i><span
                           x-text="order.needReceipt ? '本訂單【需要】收據' : '本單【不需要】收據'"></span></span>
                     </div>
                     <span class="font-extrabold text-slate-900" x-text="'共 ' + order.items.length + ' 份素便當'"></span>
@@ -477,7 +486,8 @@
                   class="px-3 py-1.5 rounded-xl border border-slate-200 text-sm font-bold">已接單</button>
               </div>
             </div>
-            <div class="max-h-[620px] overflow-auto rounded-2xl border border-slate-200 bg-white/90 shadow-sm custom-scrollbar">
+            <div
+              class="max-h-[620px] overflow-auto rounded-2xl border border-slate-200 bg-white/90 shadow-sm custom-scrollbar">
               <table class="min-w-[1180px] w-full text-sm text-left">
                 <thead class="sticky top-0 z-10 bg-brand-50/95 text-slate-800 border-b border-slate-200">
                   <tr class="text-[13px] font-black">
@@ -499,7 +509,8 @@
                       <td class="px-4 py-3 font-black text-brand-700" x-text="order.id"></td>
                       <td class="px-4 py-3">
                         <div class="font-black text-slate-900" x-text="order.unit"></div>
-                        <div class="text-xs text-slate-500 mt-1">電話：<span x-text="order.userPhone || '未提供'"></span></div>
+                        <div class="text-xs text-slate-500 mt-1">電話：<span x-text="order.userPhone || '未提供'"></span>
+                        </div>
                         <span class="inline-flex mt-2 px-2 py-0.5 rounded-full bg-slate-100 text-xs font-bold"
                           x-text="order.isCustomized ? '客製單' : '統一單'"></span>
                       </td>
@@ -507,7 +518,8 @@
                         <div class="font-bold text-slate-900" x-text="order.timestamp"></div>
                         <div class="text-xs text-slate-500 mt-1" x-text="order.deliveryTime || '未註明'"></div>
                       </td>
-                      <td class="px-4 py-3 font-bold text-slate-900 whitespace-normal" x-text="order.deliveryAddress || '未註明'"></td>
+                      <td class="px-4 py-3 font-bold text-slate-900 whitespace-normal"
+                        x-text="order.deliveryAddress || '未註明'"></td>
                       <td class="px-4 py-3">
                         <div class="space-y-2">
                           <template x-for="(item, idx) in order.items" :key="idx">
@@ -532,8 +544,16 @@
                         </div>
                       </td>
                       <td class="px-4 py-3 font-black text-slate-900">NT$<span x-text="order.totalAmount"></span></td>
-                      <td class="px-4 py-3 text-slate-700 font-bold" x-text="order.needTableware ? '需要' : '不需要'"></td>
-                      <td class="px-4 py-3 text-slate-700 font-bold" x-text="order.needReceipt ? '需要' : '不需要'"></td>
+                      <td class="px-4 py-3 text-slate-700 font-bold">
+                        <span :class="order.needTableware ? 'text-emerald-600' : 'text-rose-500'"
+                          class="text-lg font-black" x-text="order.needTableware ? 'O' : 'X'"
+                          :aria-label="order.needTableware ? '需要餐具' : '不需要餐具'"></span>
+                      </td>
+                      <td class="px-4 py-3 text-slate-700 font-bold">
+                        <span :class="order.needReceipt ? 'text-emerald-600' : 'text-rose-500'"
+                          class="text-lg font-black" x-text="order.needReceipt ? 'O' : 'X'"
+                          :aria-label="order.needReceipt ? '需要收據' : '不需要收據'"></span>
+                      </td>
                       <td class="px-4 py-3">
                         <select x-model="order.status" @change="updateOrderStatus(order)"
                           :class="{ 'bg-red-100 text-red-800 border-red-300': order.status === '\u672a\u63a5\u55ae', 'bg-green-100 text-green-800 border-green-300': order.status === '\u5df2\u63a5\u55ae' }"
@@ -547,7 +567,8 @@
                   </template>
                 </tbody>
               </table>
-              <div x-show="filteredOrders.length === 0" class="text-center py-10 text-slate-500 text-sm">目前沒有符合的訂單。</div>
+              <div x-show="filteredOrders.length === 0" class="text-center py-10 text-slate-500 text-sm">目前沒有符合的訂單。
+              </div>
             </div>
           </div>
         </div>
@@ -726,145 +747,10 @@
                 <div class="flex gap-2">
                   <template x-for="name in settings.colorPassword" :key="Math.random() + name">
                     <span class="px-2.5 py-1 rounded-full text-xs font-black text-white"
-                      :class="colorOptions.find(c => c.name === name)?.class || 'bg-slate-400'"
-                      x-text="name"></span>
+                      :class="colorOptions.find(c => c.name === name)?.class || 'bg-slate-400'" x-text="name"></span>
                   </template>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="glass-panel rounded-3xl p-6 space-y-4">
-            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
-              <i class="fa-solid fa-text-height text-brand-600"></i><span>文字大小設置</span>
-            </h4>
-            <p class="text-xs text-slate-600">調整前台和後台介面的文字顯示大小，所有文字全部連動縮放。</p>
-            <div class="space-y-5">
-              <!-- 前台點餐文字大小 -->
-              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl space-y-3">
-                <label class="block font-bold text-slate-700 text-sm">前台點餐文字大小</label>
-                <div class="flex items-center space-x-3">
-                  <input type="range" x-model.number="settings.clientFontSize" min="12" max="20" step="1"
-                    class="flex-grow h-2 bg-white/50 rounded-lg appearance-none cursor-pointer accent-brand-600">
-                  <span class="text-sm font-black text-brand-700 bg-white/60 px-3 py-1 rounded-lg min-w-[56px] text-center" x-text="settings.clientFontSize + 'px'"></span>
-                </div>
-                <div class="mt-2 text-slate-600 bg-white/30 p-3 rounded-lg" :style="{ fontSize: settings.clientFontSize + 'px' }">
-                  預覽：這是點餐介面上的文字大小，同仁點餐單、主菜選擇、備註等。
-                </div>
-              </div>
-              <!-- 後台管理文字大小 -->
-              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl space-y-3">
-                <label class="block font-bold text-slate-700 text-sm">後台管理文字大小（即時生效）</label>
-                <div class="flex items-center gap-2 bg-white/30 border border-slate-200 rounded-xl px-2 py-1.5">
-                  <span class="text-xs font-bold text-slate-400 pl-1">Aa</span>
-                  <input type="range" x-model.number="settings.adminFontSize" min="12" max="20" step="1"
-                    class="flex-grow h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
-                  <div class="flex items-center gap-1.5">
-                    <button @click="settings.adminFontSize = Math.max(12, settings.adminFontSize - 1)"
-                      class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-sm flex items-center justify-center transition-all">-</button>
-                    <span class="text-sm font-black text-brand-700 bg-white/60 px-2.5 py-0.5 rounded-lg min-w-[48px] text-center" x-text="settings.adminFontSize + 'px'"></span>
-                    <button @click="settings.adminFontSize = Math.min(20, settings.adminFontSize + 1)"
-                      class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-sm flex items-center justify-center transition-all">+</button>
-                  </div>
-                </div>
-                <div class="mt-2 text-slate-600 bg-white/30 p-3 rounded-lg" :style="{ fontSize: settings.adminFontSize + 'px' }">
-                  預覽：這是後台管理介面上的文字大小，調整後頁面全部文字連動縮放。
-                </div>
-                <p class="text-[10px] text-brand-700 font-semibold flex items-center gap-1">
-                  <i class="fa-solid fa-circle-info"></i>拖動滑桿或按 +/- 即時預覽全頁文字縮放效果
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="glass-panel rounded-3xl p-6 space-y-4">
-            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
-              <i class="fa-solid fa-receipt text-brand-600"></i><span>收據需求設置</span>
-            </h4>
-            <p class="text-xs text-slate-600">設定客戶是否需要付款收據。</p>
-            <div class="space-y-3">
-              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl">
-                <div class="flex items-center space-x-3">
-                  <input type="checkbox" x-model="settings.requireReceipt"
-                    class="h-5 w-5 text-brand-600 border-white/60 rounded bg-white/20 cursor-pointer">
-                  <label class="text-sm font-bold text-slate-800 cursor-pointer flex-grow">
-                    是否啟用收據功能
-                  </label>
-                </div>
-                <p class="text-xs text-slate-600 mt-2 ml-8">勾選此選項將在訂單詳情中顯示收據需求選項</p>
-              </div>
-              
-              <div x-show="settings.requireReceipt" class="bg-brand-50/40 border border-brand-200/50 p-4 rounded-2xl space-y-2" x-transition>
-                <div class="flex items-center space-x-3">
-                  <input type="checkbox" x-model="settings.receiptByDefault"
-                    class="h-5 w-5 text-brand-600 border-white/60 rounded bg-white/20 cursor-pointer">
-                  <label class="text-sm font-bold text-slate-800 cursor-pointer flex-grow">
-                    預設勾選「需要收據」
-                  </label>
-                </div>
-                <p class="text-xs text-slate-600 ml-8">新訂單預設是否需要收據（客戶仍可修改）</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="space-y-6">
-          <div class="glass-panel rounded-3xl p-6 space-y-4">
-            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
-              <i class="fa-solid fa-location-dot text-brand-600"></i><span>配送地址設置</span>
-            </h4>
-            <p class="text-xs text-slate-600">管理外送配送地址的相關設定，可將預設地址一鍵導入前台表單。</p>
-            <div class="space-y-3">
-              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl">
-                <label class="block font-bold text-slate-700 mb-2 text-sm">預設配送地址</label>
-                <div class="relative">
-                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"><i class="fa-solid fa-location-dot"></i></span>
-                  <input type="text" x-model="settings.defaultDeliveryAddress"
-                    placeholder="例如：彰化縣彰化市中山路 100 號"
-                    class="w-full pl-8 pr-3 py-2 rounded-xl glass-input text-sm">
-                </div>
-                <button @click="importDeliveryAddressToClient()"
-                  class="mt-3 w-full glass-btn-primary text-white py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-2">
-                  <i class="fa-solid fa-file-import"></i>
-                  <span>導入至前台預設地址</span>
-                </button>
-                <p class="text-[10px] text-slate-500 mt-2">點擊後前台訂單表地址欄將自動填入此地址</p>
-              </div>
-
-              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl">
-                <label class="block font-bold text-slate-700 mb-2 text-sm">配送地址提示文字</label>
-                <textarea x-model="settings.deliveryAddressHint"
-                  placeholder="例如：請確認是否需要外送，外送費用另計。"
-                  class="w-full px-3 py-2 rounded-xl glass-input text-xs h-20 resize-none"></textarea>
-              </div>
-
-              <div class="bg-white/40 border border-white/60 p-4 rounded-2xl">
-                <div class="flex items-center space-x-3">
-                  <input type="checkbox" x-model="settings.requireDeliveryAddress"
-                    class="h-5 w-5 text-brand-600 border-white/60 rounded bg-white/20 cursor-pointer">
-                  <label class="text-sm font-bold text-slate-800 cursor-pointer flex-grow">
-                    強制要求填寫配送地址
-                  </label>
-                </div>
-                <p class="text-xs text-slate-600 mt-2 ml-8">勾選後客戶必須填寫配送地址才能完成訂單</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="glass-panel rounded-3xl p-6 space-y-4">
-            <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
-              <i class="fa-solid fa-floppy-disk text-brand-600"></i><span>設置保存</span>
-            </h4>
-            <p class="text-xs text-slate-600 mb-3">所有設定更改將自動保存到雲端資料庫。</p>
-            <div class="space-y-2">
-              <button @click="saveSettings()"
-                class="glass-btn-primary text-white w-full py-3 rounded-xl font-black flex items-center justify-center space-x-2">
-                <i class="fa-solid fa-check"></i><span>保存所有設置</span>
-              </button>
-              <button @click="resetSettings()"
-                class="glass-btn text-slate-800 w-full py-2.5 rounded-xl font-bold flex items-center justify-center space-x-2">
-                <i class="fa-solid fa-rotate-left"></i><span>恢復預設設置</span>
-              </button>
             </div>
           </div>
         </div>
@@ -1269,7 +1155,7 @@
 
         get filteredOrders() {
           return this.orders.filter(order => {
-              const query = this.orderQuery.trim().toLowerCase();
+            const query = this.orderQuery.trim().toLowerCase();
             const statusMatch = this.orderStatusFilter === 'all' || order.status === this.orderStatusFilter;
             const queryMatch = !query || order.unit.toLowerCase().includes(query)
               || order.userName.toLowerCase().includes(query)
