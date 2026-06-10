@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VegeBento Go! 智慧素食便當訂購與管理系統</title>
+  <title> VegeTingyi 蔬食便當訂購系統</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -240,12 +240,9 @@
         </div>
         <div>
           <h1 class="font-bold text-lg text-slate-900 tracking-tight flex items-center gap-2">
-            <span>VegeBento Go!</span>
-            <span
-              class="bg-gradient-to-r from-green-600 to-emerald-600 text-white font-black text-[10px] px-2 py-0.5 rounded-full tracking-widest">LIGHT
-              LIQUID</span>
+            <span>VegeTingyi</span>
           </h1>
-          <p class="text-xs text-slate-500 font-medium mt-0.5">流光液態美學 · 智慧蔬食點餐大廳</p>
+          <p class="text-xs text-slate-500 font-medium mt-0.5">蔬食點餐大廳</p>
         </div>
       </div>
 
@@ -453,19 +450,20 @@
                 :class="!clientForm.singleBento.riceType ? 'opacity-70 cursor-not-allowed' : ''"
                 class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
                 <option value="正常">正常</option>
-                <option value="少飯">少飯</option>
-                <option value="半飯">半飯</option>
+                <option value="半飯">半飯(1/2)</option>
+                <option value="少飯">少飯(1/3)</option>
+                <option value="多飯">多飯(2/3)</option>
                 <option value="不飯菜多">不飯菜多</option>
               </select>
             </div>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">精選項目（最多顯示 5 項）</label>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">精選主餐（最多顯示 5 項）</label>
             <select x-model="clientForm.singleBento.mainDish"
               class="w-full glass-input text-green-700 font-bold rounded-xl px-3 py-2.5 text-sm focus:outline-none">
               <template x-if="getAvailableDishesForPrice(clientForm.singleBento).length === 0">
-                <option disabled>目前尚無精選主菜，請管理員上架</option>
+                <option disabled>目前尚無精選主餐，請管理員上架</option>
               </template>
               <template x-for="dish in getAvailableDishesForPrice(clientForm.singleBento)" :key="dish.id">
                 <option :value="dish.name" x-text="dish.name + ' · ' + dish.vegType"></option>
@@ -499,18 +497,18 @@
               <i class="fa-solid fa-users"></i>
             </span>
             <div>
-              <h2 class="font-bold text-base text-slate-900">成員專屬客製化清單</h2>
-              <p class="text-xs text-slate-500 font-medium mt-0.5">每位同仁可自由決定餐盒價位、飯量、主菜與忌口</p>
+              <h2 class="font-bold text-base text-slate-900">客製化訂單</h2>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">每位同仁可自由決定價位、飯量、主菜與忌口</p>
             </div>
           </div>
           <div class="flex flex-wrap gap-2 items-center">
             <button type="button" @click="copyAllCustomBentos()"
               class="glass-btn text-slate-800 bg-slate-100 hover:bg-slate-200 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5">
-              <i class="fa-solid fa-copy"></i><span>複製全部餐點</span>
+              <i class="fa-solid fa-copy"></i><span>複製全部</span>
             </button>
             <button type="button" @click="addCustomBentoRow()"
               class="glass-btn-primary text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5">
-              <i class="fa-solid fa-user-plus"></i><span>新增一位同仁</span>
+              <i class="fa-solid fa-user-plus"></i><span>新增</span>
             </button>
           </div>
         </div>
@@ -600,16 +598,17 @@
                     <select x-model="row.rice" :disabled="!row.riceType"
                       :class="!row.riceType ? 'opacity-70 cursor-not-allowed' : ''"
                       class="w-full glass-input rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none">
-                      <option value="正常">正常飯</option>
-                      <option value="少飯">健康少飯</option>
-                      <option value="半飯">纖體半飯</option>
+                      <option value="正常">正常</option>
+                      <option value="半飯">半飯(1/2)</option>
+                      <option value="少飯">少飯(1/3)</option>
+                      <option value="多飯">多飯(2/3)</option>
                       <option value="不飯菜多">不飯菜多</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">精選主菜</label>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">精選主餐</label>
                   <select x-model="row.mainDish"
                     class="w-full glass-input text-green-700 font-bold rounded-xl px-2 py-1.5 text-xs focus:outline-none">
                     <template x-for="dish in getAvailableDishesForPrice(row)" :key="dish.id">
@@ -646,7 +645,7 @@
             </span>
             <div>
               <h2 class="font-bold text-base text-slate-900">發送訂單</h2>
-              <p class="text-xs text-slate-500 font-medium mt-0.5">系統自動彙整項目，確認無誤後點擊送出</p>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">確認無誤後點擊送出</p>
             </div>
           </div>
         </div>
@@ -748,7 +747,7 @@
           </div>
 
           <div class="pt-3 border-t border-white/10 flex justify-between items-baseline">
-            <span class="text-sm font-bold text-green-900">應付新台幣金額</span>
+            <span class="text-sm font-bold text-green-900">應付金額</span>
             <div class="text-right">
               <span class="text-xs font-bold text-slate-900 mr-1">NT$</span>
               <span class="text-3xl font-black tracking-tight text-green-900" x-text="calculateTotal()">0</span>
@@ -975,8 +974,8 @@
   </div>
 
   <footer
-    class="mt-auto border-t border-slate-200/50 bg-white/20 py-4 text-center text-xs font-medium text-slate-500 hidden md:block">
-    VegeBento Go! 智慧蔬食體系 © 2026 研發部技術支援
+    class="bg-white/40 backdrop-blur-md border-t border-white/20 py-4 text-center text-xs text-slate-600 relative z-10">
+    <p>VegeTingyi 蔬食點餐系統 ©</p>
   </footer>
 
   <!-- ══ 手機底部 Tab Bar ══ -->
@@ -1498,7 +1497,7 @@
           this.userHistory = this.cleanupUserHistory(this.userHistory);
 
           this.showToast(
-            wasEditing ? '訂單已成功更新！後台看板已同步最新內容。' : '素食餐盒訂單發送成功！已同步至雲端資料庫。',
+            wasEditing ? '訂單已成功更新！' : '訂單發送成功！',
             'success'
           );
 

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VegeBento Go! 後台管理系統</title>
+  <title>VegeTingyi 後台管理系統</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -44,6 +44,7 @@
     html {
       transition: font-size 0.2s ease;
     }
+
   </style>
 </head>
 
@@ -61,15 +62,15 @@
           </div>
           <div>
             <span
-              class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-brand-700 to-green-800 bg-clip-text text-transparent">VegeBento
-              Go!</span>
-            <span class="text-xs block text-emerald-800/80 font-bold">後台管理系統</span>
+              class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-brand-700 to-green-800 bg-clip-text text-transparent">VegeTingyi
+              </span>
+            <span class="text-xs block text-emerald-800/80 font-bold">管理系統</span>
           </div>
         </div>
         <div class="flex items-center space-x-3">
           <button @click="goToClient()"
             class="glass-btn text-slate-700 px-3.5 py-2 rounded-xl text-sm font-bold flex items-center space-x-2">
-            <i class="fa-solid fa-shop text-brand-600"></i><span>返回前台點餐</span>
+            <i class="fa-solid fa-shop text-brand-600"></i><span>返回前台</span>
           </button>
         </div>
       </div>
@@ -177,27 +178,27 @@
       <div class="border-b border-white/40 flex flex-wrap justify-between items-center mb-6 gap-2">
         <nav class="flex flex-wrap gap-4 pb-2">
           <button @click="adminTab = 'orders'"
-            :class="adminTab === 'orders' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'"
+            :class="adminTab === 'orders' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-bowl-food"></i><span>今日訂單與備料統計</span>
           </button>
           <button @click="adminTab = 'dishes'"
-            :class="adminTab === 'dishes' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'"
+            :class="adminTab === 'dishes' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-utensils"></i><span>每日素食主菜管理</span>
           </button>
           <button @click="adminTab = 'allOrders'"
-            :class="adminTab === 'allOrders' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'"
+            :class="adminTab === 'allOrders' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-magnifying-glass"></i><span>全部訂單查詢</span>
           </button>
           <button @click="adminTab = 'content'"
-            :class="adminTab === 'content' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'"
+            :class="adminTab === 'content' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-image"></i><span>照片與公告管理</span>
           </button>
           <button @click="adminTab = 'settings'"
-            :class="adminTab === 'settings' ? 'border-brand-600 text-brand-800 font-black' : 'border-transparent text-slate-600 hover:text-slate-800 font-bold'"
+            :class="adminTab === 'settings' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-key"></i><span>密碼設置區</span>
           </button>
@@ -260,17 +261,18 @@
 
         <div class="lg:col-span-8 space-y-4">
           <div class="flex justify-between items-center">
-            <h3 class="text-base font-black text-slate-900 flex items-center space-x-1.5">
+            <h3 class="text-base font-black text-white flex items-center space-x-1.5">
               <i class="fa-solid fa-list-check text-brand-600"></i>
-              <span>即時顧客點餐看板明細</span>
+              <span>顧客點餐板</span>
             </h3>
             <button x-show="orders.length > 0" @click="triggerClearAllOrders()"
-              class="text-xs text-red-600 hover:text-red-700 font-bold flex items-center space-x-1">
-              <i class="fa-regular fa-trash-can"></i><span>清空與重置今日全部訂單</span>
+              class="text-xs text-red-300 hover:text-red-700 font-bold flex items-center space-x-1">
+              <i class="fa-regular fa-trash-can"></i><span>清除今日訂單</span>
             </button>
           </div>
 
           <div class="space-y-4">
+            
             <template x-for="order in orders" :key="order.id">
               <div class="glass-panel rounded-3xl overflow-hidden shadow-sm transition-all duration-300"
                 :class="order.status === '\u672a\u63a5\u55ae' ? 'order-pending-alert' : 'border border-white/50'">
@@ -349,7 +351,7 @@
                 </div>
                 <div
                   class="p-3 bg-white/30 border-t border-white/40 flex justify-between items-center text-xs font-bold text-slate-800">
-                  <span>付款方式：現金 / 劃帳</span>
+                  <span>付款方式：現金</span>
                   <span class="text-sm font-black text-brand-800">總計金額：$<span x-text="order.totalAmount"></span>
                     元</span>
                 </div>
@@ -372,7 +374,7 @@
               <i class="fa-solid fa-pen-to-square text-brand-500"></i>
               <span x-text="editingDish.id ? '編輯現有主菜項目' : '新增今日主菜上架'"></span>
             </h4>
-            <p class="text-xs text-slate-500">此處新增的主菜會同步成為前台 Index 精選項目，管理員可設定供應狀態與適用價格。</p>
+            <p class="text-xs text-slate-500">此處新增的主菜會同步成為前台主菜項目，管理員可設定供應狀態與適用價格。</p>
             <div class="space-y-3 text-xs">
               <div>
                 <label class="block font-bold text-slate-700 mb-1">主菜名稱</label>
@@ -760,7 +762,7 @@
 
   <footer
     class="bg-white/40 backdrop-blur-md border-t border-white/20 py-4 text-center text-xs text-slate-600 relative z-10">
-    <p>© 2026 VegeBento Go! 智慧健康素食餐盒控制系統. All rights reserved.</p>
+    <p>VegeTingyi 蔬食點餐系統 ©</p>
   </footer>
 
   <script>
