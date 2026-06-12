@@ -273,7 +273,7 @@
 
           <div class="space-y-4">
             
-            <template x-for="order in orders" :key="order.id">
+            <template x-for="order in sortedOrders" :key="order.id">
               <div class="glass-panel rounded-3xl overflow-hidden shadow-sm transition-all duration-300"
                 :class="order.status === '\u672a\u63a5\u55ae' ? 'order-pending-alert' : 'border border-white/50'">
                 <div class="p-4 bg-white/40 border-b border-white/40 flex flex-wrap justify-between items-center gap-2">
@@ -466,33 +466,39 @@
           <div class="glass-panel rounded-3xl p-6 space-y-4">
             <div class="flex items-center justify-between">
               <div>
-                <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
+                <h4 class="text-lg font-black text-slate-900 flex items-center space-x-2">
                   <i class="fa-solid fa-magnifying-glass text-brand-600"></i><span>全部訂單查詢</span>
                 </h4>
-                <p class="text-xs text-slate-500">可快速查看所有訂單資訊並設定接單狀態。</p>
+                <p class="text-sm text-slate-500">可快速查看所有訂單資訊並設定接單狀態。</p>
               </div>
-              <div class="text-xs text-slate-500 font-bold">共有 <span x-text="filteredOrders.length"></span> 筆訂單</div>
+              <div class="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                <button @click="allOrdersLargeView = true"
+                  class="glass-btn text-sm font-bold px-4 py-2 rounded-xl flex items-center space-x-2 text-slate-900 bg-white/90 border border-slate-200 hover:bg-white">
+                  <i class="fa-solid fa-tv"></i><span>大畫面檢視</span>
+                </button>
+                <div class="text-base text-slate-500 font-bold">共有 <span x-text="filteredOrders.length"></span> 筆訂單</div>
+              </div>
             </div>
-            <div class="grid grid-cols-1 gap-3">
+            <div class="grid grid-cols-1 gap-3 text-base">
               <input type="text" x-model="orderQuery" placeholder="搜尋訂購單位或姓名"
-                class="w-full px-3 py-2 rounded-xl glass-input text-sm font-bold">
+                class="w-full px-3 py-3 rounded-xl glass-input text-base font-bold">
               <div class="flex flex-wrap gap-2">
                 <button type="button" @click="orderStatusFilter = 'all'"
                   :class="orderStatusFilter === 'all' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'"
-                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-sm font-bold">全部</button>
+                  class="px-4 py-2 rounded-xl border border-slate-200 text-base font-bold">全部</button>
                 <button type="button" @click="orderStatusFilter = '未接單'"
                   :class="orderStatusFilter === '未接單' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'"
-                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-sm font-bold">未接單</button>
+                  class="px-4 py-2 rounded-xl border border-slate-200 text-base font-bold">未接單</button>
                 <button type="button" @click="orderStatusFilter = '已接單'"
                   :class="orderStatusFilter === '已接單' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'"
-                  class="px-3 py-1.5 rounded-xl border border-slate-200 text-sm font-bold">已接單</button>
+                  class="px-4 py-2 rounded-xl border border-slate-200 text-base font-bold">已接單</button>
               </div>
             </div>
             <div
               class="max-h-[620px] overflow-auto rounded-2xl border border-slate-200 bg-white/90 shadow-sm custom-scrollbar">
-              <table class="min-w-[1180px] w-full text-sm text-left">
+              <table class="min-w-[1180px] w-full text-base text-left">
                 <thead class="sticky top-0 z-10 bg-brand-50/95 text-slate-800 border-b border-slate-200">
-                  <tr class="text-[13px] font-black">
+                  <tr class="text-sm font-black">
                     <th class="px-4 py-3 w-[120px]">訂單編號</th>
                     <th class="px-4 py-3 w-[180px]">訂購資訊</th>
                     <th class="px-4 py-3 w-[120px]">時間</th>
@@ -508,36 +514,36 @@
                 <tbody class="divide-y divide-slate-200 text-slate-700">
                   <template x-for="order in filteredOrders" :key="order.id">
                     <tr class="align-top hover:bg-brand-50/35 transition-colors">
-                      <td class="px-4 py-3 font-black text-brand-700" x-text="order.id"></td>
-                      <td class="px-4 py-3">
-                        <div class="font-black text-slate-900" x-text="order.unit"></div>
-                        <div class="text-xs text-slate-500 mt-1">電話：<span x-text="order.userPhone || '未提供'"></span>
+                      <td class="px-4 py-3 font-black text-brand-700 text-base" x-text="order.id"></td>
+                      <td class="px-4 py-3 text-base">
+                        <div class="font-black text-slate-900 text-base" x-text="order.unit"></div>
+                        <div class="text-sm text-slate-500 mt-1">電話：<span x-text="order.userPhone || '未提供'"></span>
                         </div>
-                        <span class="inline-flex mt-2 px-2 py-0.5 rounded-full bg-slate-100 text-xs font-bold"
+                        <span class="inline-flex mt-2 px-2 py-0.5 rounded-full bg-slate-100 text-sm font-bold"
                           x-text="order.isCustomized ? '客製單' : '統一單'"></span>
                       </td>
                       <td class="px-4 py-3">
-                        <div class="font-bold text-slate-900" x-text="order.timestamp"></div>
-                        <div class="text-xs text-slate-500 mt-1" x-text="order.deliveryTime || '未註明'"></div>
+                        <div class="font-bold text-slate-900 text-base" x-text="order.timestamp"></div>
+                        <div class="text-sm text-slate-500 mt-1" x-text="order.deliveryTime || '未註明'"></div>
                       </td>
-                      <td class="px-4 py-3 font-bold text-slate-900 whitespace-normal"
+                      <td class="px-4 py-3 font-bold text-slate-900 whitespace-normal text-base"
                         x-text="order.deliveryAddress || '未註明'"></td>
                       <td class="px-4 py-3">
                         <div class="space-y-2">
                           <template x-for="(item, idx) in order.items" :key="idx">
                             <div class="rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
-                              <div class="font-black text-slate-900">
+                              <div class="font-black text-slate-900 text-base">
                                 <span x-text="(idx + 1) + '. ' + item.name"></span>
                                 <span class="ml-2 text-brand-700" x-text="item.mainDish"></span>
                               </div>
-                              <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-slate-500">
+                              <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold text-slate-500">
                                 <span>飯別：<span class="text-slate-700" x-text="item.riceType"></span></span>
                                 <span>飯量：<span class="text-slate-700" x-text="item.rice"></span></span>
                                 <span>價格：NT$<span class="text-slate-700" x-text="item.price"></span></span>
                                 <span>數量：<span class="text-slate-700" x-text="item.count"></span></span>
                               </div>
                               <div x-show="item.dislikes.length > 0 || item.otherDislike"
-                                class="mt-1 text-xs font-bold text-rose-700">
+                                class="mt-1 text-sm font-bold text-rose-700">
                                 忌口：
                                 <span x-text="[...item.dislikes, item.otherDislike].filter(Boolean).join('、')"></span>
                               </div>
@@ -569,7 +575,79 @@
                   </template>
                 </tbody>
               </table>
-              <div x-show="filteredOrders.length === 0" class="text-center py-10 text-slate-500 text-sm">目前沒有符合的訂單。
+              <div x-show="filteredOrders.length === 0" class="text-center py-10 text-slate-500 text-base">目前沒有符合的訂單。
+              </div>
+            </div>
+            <div x-show="allOrdersLargeView" x-cloak
+              class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl overflow-y-auto p-6">
+              <div class="max-w-screen-2xl mx-auto space-y-6">
+                <div class="flex flex-col lg:flex-row justify-between gap-4 items-start lg:items-center">
+                  <div>
+                    <h4 class="text-3xl font-black text-white">全部訂單大畫面</h4>
+                    <p class="mt-2 text-base text-slate-300">放大呈現訂單內容，方便大螢幕快速閱讀。</p>
+                    <div class="mt-3 text-sm text-slate-400">共 <span x-text="filteredOrders.length"></span> 筆訂單</div>
+                  </div>
+                  <button @click="allOrdersLargeView = false"
+                    class="glass-btn text-white bg-brand-600 hover:bg-brand-700 px-5 py-3 rounded-2xl text-base font-bold">關閉</button>
+                </div>
+
+                <div class="grid gap-5">
+                  <template x-for="order in filteredOrders" :key="order.id">
+                    <div class="rounded-[2rem] border border-white/20 bg-white/95 p-6 shadow-2xl">
+                      <div class="flex flex-col xl:flex-row justify-between gap-6 mb-6">
+                        <div class="space-y-3">
+                          <div class="text-3xl font-black text-slate-900">訂單：<span x-text="order.id"></span></div>
+                          <div class="text-2xl text-slate-700">單位：<span class="font-bold text-slate-900" x-text="order.unit"></span></div>
+                          <div class="text-2xl text-slate-700">電話：<span class="font-bold text-slate-900" x-text="order.userPhone || '未提供'"></span></div>
+                        </div>
+                        <div class="space-y-3 text-right">
+                          <div class="text-3xl font-black text-brand-700" x-text="'NT$' + order.totalAmount"></div>
+                          <div class="text-2xl font-black text-slate-900" x-text="'狀態：' + order.status"></div>
+                          <div class="text-lg text-slate-600" x-text="'下單：' + order.timestamp"></div>
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="rounded-3xl bg-brand-50 p-5 border border-brand-100 text-lg text-slate-700">
+                          <div class="font-black mb-3">配送資訊</div>
+                          <div>送達時間：<span class="font-bold text-slate-900" x-text="order.deliveryTime || '未註明'"></span></div>
+                          <div class="mt-2">地址：<span class="font-bold text-slate-900" x-text="order.deliveryAddress || '未註明'"></span></div>
+                        </div>
+                        <div class="rounded-3xl bg-brand-50 p-5 border border-brand-100 text-lg text-slate-700">
+                          <div class="font-black mb-3">快速狀態</div>
+                          <div>餐具：<span class="font-bold" :class="order.needTableware ? 'text-emerald-700' : 'text-rose-600'" x-text="order.needTableware ? '需要' : '不需要'"></span></div>
+                          <div class="mt-2">收據：<span class="font-bold" :class="order.needReceipt ? 'text-emerald-700' : 'text-rose-600'" x-text="order.needReceipt ? '需要' : '不需要'"></span></div>
+                        </div>
+                      </div>
+
+                      <div class="space-y-5">
+                        <div class="text-2xl font-black text-slate-900">餐點明細</div>
+                        <template x-for="(item, idx) in order.items" :key="idx">
+                          <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                            <div class="flex flex-col md:flex-row md:justify-between gap-3">
+                              <div class="text-2xl font-black text-slate-900"><span x-text="(idx + 1) + '. ' + item.name"></span></div>
+                              <div class="text-xl text-slate-700">NT$<span class="font-black" x-text="item.price"></span> × <span class="font-black" x-text="item.count"></span></div>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-4 text-lg text-slate-700">
+                              <div>主菜：<span class="font-bold text-slate-900" x-text="item.mainDish"></span></div>
+                              <div>飯量：<span class="font-bold text-slate-900" x-text="item.rice"></span></div>
+                              <div x-show="item.riceType">飯別：<span class="font-bold text-slate-900" x-text="item.riceType"></span></div>
+                            </div>
+                            <div x-show="item.dislikes.length > 0 || item.otherDislike" class="mt-4 rounded-3xl bg-rose-100 p-4 text-base text-rose-800">
+                              忌口：<span x-text="[...item.dislikes, item.otherDislike].filter(Boolean).join('、')"></span>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+
+                      <div class="mt-6 rounded-3xl bg-slate-100 p-5 text-lg text-slate-700">
+                        備註：<span class="font-bold text-slate-900" x-text="order.note || '無'"></span>
+                      </div>
+                    </div>
+                  </template>
+
+                  <div x-show="filteredOrders.length === 0" class="text-center py-24 text-white text-2xl">目前沒有符合的訂單。</div>
+                </div>
               </div>
             </div>
           </div>
@@ -790,6 +868,7 @@
         newAnnouncement: { title: '', body: '' },
         orderQuery: '',
         orderStatusFilter: 'all',
+        allOrdersLargeView: false,
         settingsSaveTimer: null,
         isLoadingSettings: false,
 
@@ -1155,6 +1234,15 @@
           this.confirmModal.show = true;
         },
 
+        get sortedOrders() {
+          return [...this.orders].sort((a, b) => {
+            const pendingA = a.status === '未接單';
+            const pendingB = b.status === '未接單';
+            if (pendingA && !pendingB) return -1;
+            if (!pendingA && pendingB) return 1;
+            return 0;
+          });
+        },
         get filteredOrders() {
           return this.orders.filter(order => {
             const query = this.orderQuery.trim().toLowerCase();
