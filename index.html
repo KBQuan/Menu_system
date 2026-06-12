@@ -234,8 +234,9 @@
   <header class="border-b border-white/20 bg-white/55 backdrop-blur-md shadow-sm sticky top-0 z-40">
     <div class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div
-          class="w-11 h-11 bg-gradient-to-tr from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md text-white">
+        <div @click="showAnnouncementsModal = true"
+          class="cursor-pointer w-11 h-11 bg-gradient-to-tr from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md text-white"
+          title="查看最新公告">
           <i class="fa-solid fa-utensils text-xl"></i>
         </div>
         <div>
@@ -973,6 +974,35 @@
     </div>
   </div>
 
+  <div x-show="showAnnouncementsModal" x-cloak
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div class="liquid-glass-modal rounded-3xl max-w-xl w-full max-h-[85vh] overflow-hidden bg-white/95 shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-200 p-5">
+        <div>
+          <h3 class="text-lg font-black text-slate-900">最新公告</h3>
+          <p class="text-sm text-slate-500 mt-1">點擊左上圖示即可快速查看公告內容</p>
+        </div>
+        <button @click="closeAnnouncements()" class="text-slate-500 hover:text-slate-900 text-xl p-2">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="overflow-y-auto p-5 space-y-4">
+        <template x-if="announcements.length === 0">
+          <div class="text-center py-12 text-slate-400 space-y-2">
+            <div class="text-3xl"><i class="fa-solid fa-inbox"></i></div>
+            <p class="text-sm font-medium">目前尚無最新公告</p>
+          </div>
+        </template>
+        <template x-for="(item, index) in announcements" :key="index">
+          <div class="rounded-3xl border border-slate-200 p-4 bg-slate-50">
+            <p class="text-sm font-bold text-emerald-700" x-text="item.title"></p>
+            <p class="mt-2 text-sm text-slate-700 whitespace-pre-wrap break-words" x-text="item.body"></p>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
   <footer
     class="bg-white/40 backdrop-blur-md border-t border-white/20 py-4 text-center text-xs text-slate-600 relative z-10">
     <p>VegeTingyi 蔬食點餐系統 ©</p>
@@ -999,6 +1029,7 @@
       return {
         activeTab: 'client',
         showHistoryModal: false,
+        showAnnouncementsModal: false,
         dislikesOptions: ['花椰菜', '咖哩', '茄子', '炸物', '素料', '青椒', '豆子', '苦瓜', '皇宮菜', '秋葵'],
         vegTypeOptions: ['全素', '蛋奶素', '奶素'],
         riceTypeOptions: ['紫米飯', '白飯'],
@@ -1182,6 +1213,14 @@
         closeHistory() {
           this.showHistoryModal = false;
           this.activeTab = 'client';
+        },
+
+        openAnnouncements() {
+          this.showAnnouncementsModal = true;
+        },
+
+        closeAnnouncements() {
+          this.showAnnouncementsModal = false;
         },
 
         async deleteHistoryOrder(orderId) {
