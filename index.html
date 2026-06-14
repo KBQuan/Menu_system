@@ -773,9 +773,9 @@
           </div>
         </template>
 
-        <button @click="submitOrder()"
+        <button @click="submitOrder()" :disabled="isSubmitting"
           class="glass-btn-primary text-white py-3.5 px-6 rounded-xl font-black text-sm flex items-center justify-center gap-2 w-full shadow-lg"
-          :class="editingOrderId ? 'bg-gradient-to-r from-amber-500/80 to-orange-500/80' : ''">
+          :class="(editingOrderId ? 'bg-gradient-to-r from-amber-500/80 to-orange-500/80' : '') + (isSubmitting ? ' opacity-60 cursor-not-allowed' : '')">
           <i :class="editingOrderId ? 'fa-solid fa-rotate' : 'fa-solid fa-paper-plane'"></i>
           <span x-text="editingOrderId ? '更新訂單（同步後台）' : '確認訂單'"></span>
         </button>
@@ -822,13 +822,14 @@
                 <div class="flex items-center gap-1.5">
                   <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black" :class="{
                       'bg-red-100 text-red-800': order.status === '未接單',
+                      'bg-rose-100 text-rose-800': order.status === '店家拒絕',
                       'bg-yellow-100 text-yellow-800': order.status === '已接單',
                       'bg-blue-100 text-blue-800': order.status === '製作中',
                       'bg-emerald-100 text-emerald-800': order.status === '已送出'
                     }" x-text="order.status"></span>
-                  <button type="button" @click="editHistoryOrder(order)" title="編輯此筆歷史紀錄"
-                    class="w-8 h-8 rounded-xl bg-white/70 border border-slate-200 text-slate-600 hover:text-green-700 hover:border-green-300 transition-all flex items-center justify-center">
-                    <i class="fa-regular fa-pen-to-square"></i>
+                  <button type="button" @click="editHistoryOrder(order)" title="再次點餐並可編輯"
+                    class="glass-btn text-slate-700 bg-white/70 hover:bg-slate-100 border border-slate-200 text-xs font-bold rounded-xl px-3 py-2 transition-all flex items-center gap-1">
+                    <i class="fa-solid fa-repeat text-[10px]"></i><span>再次點餐</span>
                   </button>
                   <button type="button" @click="deleteHistoryOrder(order.id)" title="刪除此筆歷史紀錄"
                     class="w-8 h-8 rounded-xl bg-white/70 border border-slate-200 text-slate-600 hover:text-rose-700 hover:border-rose-300 transition-all flex items-center justify-center">
@@ -836,6 +837,11 @@
                   </button>
                 </div>
               </div>
+              <template x-if="order.status === '店家拒絕'">
+                <div class="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-rose-800 text-xs font-bold">
+                  <p>本訂單已被店家拒絕，請重新確認訂單內容或直接聯繫賣家。</p>
+                </div>
+              </template>
               <div class="text-slate-500 grid grid-cols-2 gap-1 font-medium">
                 <p>訂購單位：<span class="text-slate-800" x-text="order.unit"></span></p>
                 <p>主要負責人：<span class="text-slate-800" x-text="order.userName"></span></p>
@@ -863,7 +869,7 @@
                 </p>
               </div>
               <div class="bg-white/40 p-2 rounded-xl border border-slate-100 space-y-1">
-                <template x-for="(it, idx) in order.items" :key="idx">
+                <template x-for="(it, idx) in getOrderDisplayItems(order)" :key="idx">
                   <div class="flex justify-between text-slate-600">
                     <span x-text="it.summary"></span>
                     <span class="font-mono font-bold text-slate-900" x-text="'x'+it.count"></span>
@@ -912,13 +918,14 @@
               <div class="flex items-center gap-1.5">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black" :class="{
                     'bg-red-100 text-red-800': order.status === '未接單',
+                    'bg-rose-100 text-rose-800': order.status === '店家拒絕',
                     'bg-yellow-100 text-yellow-800': order.status === '已接單',
                     'bg-blue-100 text-blue-800': order.status === '製作中',
                     'bg-emerald-100 text-emerald-800': order.status === '已送出'
                   }" x-text="order.status"></span>
-                <button type="button" @click="editHistoryOrder(order)" title="編輯此筆歷史紀錄"
-                  class="w-7 h-7 rounded-lg bg-white/70 border border-slate-200 text-slate-600 hover:text-green-700 hover:border-green-300 transition-all">
-                  <i class="fa-regular fa-pen-to-square"></i>
+                <button type="button" @click="editHistoryOrder(order)" title="再次點餐並可編輯"
+                  class="glass-btn text-slate-700 bg-white/70 hover:bg-slate-100 border border-slate-200 text-[11px] font-bold rounded-xl px-3 py-2 transition-all flex items-center gap-1">
+                  <i class="fa-solid fa-repeat text-[10px]"></i><span>再次點餐</span>
                 </button>
                 <button type="button" @click="deleteHistoryOrder(order.id)" title="刪除此筆歷史紀錄"
                   class="w-7 h-7 rounded-lg bg-white/70 border border-slate-200 text-slate-600 hover:text-rose-700 hover:border-rose-300 transition-all">
@@ -926,6 +933,11 @@
                 </button>
               </div>
             </div>
+            <template x-if="order.status === '店家拒絕'">
+              <div class="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-rose-800 text-xs font-bold">
+                <p>本訂單已被店家拒絕，請重新確認訂單內容或直接聯繫賣家。</p>
+              </div>
+            </template>
             <div class="text-slate-500 grid grid-cols-2 gap-1 font-medium">
               <p>訂購單位：<span class="text-slate-800" x-text="order.unit"></span></p>
               <p>主要負責人：<span class="text-slate-800" x-text="order.userName"></span></p>
@@ -953,7 +965,7 @@
               </p>
             </div>
             <div class="bg-white/40 p-2 rounded-xl border border-slate-100 space-y-1">
-              <template x-for="(it, idx) in order.items" :key="idx">
+              <template x-for="(it, idx) in getOrderDisplayItems(order)" :key="idx">
                 <div class="flex justify-between text-slate-600">
                   <span x-text="it.summary"></span>
                   <span class="font-mono font-bold text-slate-900" x-text="'x'+it.count"></span>
@@ -1041,6 +1053,7 @@
 
         // 編輯模式：記錄正在修改的原始訂單 ID（null 表示新增模式）
         editingOrderId: null,
+        isSubmitting: false,
 
         toast: { show: false, message: '', type: 'success' },
 
@@ -1138,12 +1151,19 @@
           const orderMap = new Map(this.orders.map(order => [order.id, order]));
           this.userHistory = this.userHistory.map(order => {
             const remote = orderMap.get(order.id);
-            return remote ? {
-              ...order,
-              status: remote.status,
-              needTableware: remote.needTableware,
-              needReceipt: remote.needReceipt
-            } : order;
+            if (remote) {
+              return {
+                ...order,
+                status: remote.status,
+                needTableware: remote.needTableware,
+                needReceipt: remote.needReceipt
+              };
+            }
+            // 若此筆歷史訂單已從賣家端消失，顯示為「店家拒絕」狀態
+            if (['未接單', '已接單', '製作中'].includes(order.status)) {
+              return { ...order, status: '店家拒絕' };
+            }
+            return order;
           });
           this.saveUserHistory();
         },
@@ -1435,35 +1455,64 @@
           }
         },
 
+        getOrderDisplayItems(order) {
+          const itemMap = new Map();
+          (order.items || []).forEach(item => {
+            const key = JSON.stringify({
+              name: item.name,
+              mainDish: item.mainDish,
+              rice: item.rice,
+              riceType: item.riceType,
+              price: item.price,
+              dislikes: (Array.isArray(item.dislikes) ? [...item.dislikes].sort() : []).join(','),
+              otherDislike: item.otherDislike || ''
+            });
+            if (!itemMap.has(key)) {
+              itemMap.set(key, {
+                ...item,
+                count: item.count || 1
+              });
+            } else {
+              itemMap.get(key).count += item.count || 1;
+            }
+          });
+          return [...itemMap.values()];
+        },
+
         async submitOrder() {
-          if (!this.clientForm.unit.trim()) {
-            this.showToast('請務必填寫「訂購單位」！', 'danger');
+          if (this.isSubmitting) {
             return;
           }
-          if (!this.clientForm.userPhone.trim()) {
-            this.showToast('請務必填寫「聯絡電話」，以利後續通知與配送。', 'danger');
-            return;
-          }
-          if (!this.clientForm.singleBento.riceType && !this.clientForm.isCustomized) {
-            this.showToast('請先選擇飯別，再選擇飯量。', 'danger');
-            return;
-          }
-          if (this.clientForm.isCustomized) {
-            const invalidRow = this.clientForm.customBentos.find(row => !row.riceType);
-            if (invalidRow) {
-              this.showToast('請為每位同仁選擇飯別後再送出訂單。', 'danger');
+          this.isSubmitting = true;
+          try {
+            if (!this.clientForm.unit.trim()) {
+              this.showToast('請務必填寫「訂購單位」！', 'danger');
               return;
             }
-          }
+            if (!this.clientForm.userPhone.trim()) {
+              this.showToast('請務必填寫「聯絡電話」，以利後續通知與配送。', 'danger');
+              return;
+            }
+            if (!this.clientForm.singleBento.riceType && !this.clientForm.isCustomized) {
+              this.showToast('請先選擇飯別，再選擇飯量。', 'danger');
+              return;
+            }
+            if (this.clientForm.isCustomized) {
+              const invalidRow = this.clientForm.customBentos.find(row => !row.riceType);
+              if (invalidRow) {
+                this.showToast('請為每位同仁選擇飯別後再送出訂單。', 'danger');
+                return;
+              }
+            }
 
-          // ── 編輯模式：先刪除舊單，再以新 ID 建立更新後的訂單 ──
-          const wasEditing = !!this.editingOrderId;
-          if (wasEditing) {
-            await VegeBentoDB.deleteOrder(this.editingOrderId);
-            this.orders = this.orders.filter(o => o.id !== this.editingOrderId);
-            this.userHistory = this.userHistory.filter(o => o.id !== this.editingOrderId);
-            this.editingOrderId = null;
-          }
+            // ── 編輯模式：先刪除舊單，再以新 ID 建立更新後的訂單 ──
+            const wasEditing = !!this.editingOrderId;
+            if (wasEditing) {
+              await VegeBentoDB.deleteOrder(this.editingOrderId);
+              this.orders = this.orders.filter(o => o.id !== this.editingOrderId);
+              this.userHistory = this.userHistory.filter(o => o.id !== this.editingOrderId);
+              this.editingOrderId = null;
+            }
 
           let items = [];
           if (!this.clientForm.isCustomized) {
@@ -1537,11 +1586,18 @@
           );
 
           // 表單初始化重置
+          this.clientForm.unit = '';
           this.clientForm.globalNote = '';
           this.clientForm.singleBento.quantity = 1;
           this.clientForm.customBentos = [{ name: '同仁 1', price: '80', otherPrice: '', vegType: '全素', riceType: '', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' }];
           this.autoSelectFirstAvailableDish();
-        },
+        } catch (error) {
+          console.error(error);
+          this.showToast('送出訂單時發生錯誤，請稍後再試。', 'danger');
+        } finally {
+          this.isSubmitting = false;
+        }
+      },
 
         showToast(msg, type = 'success') {
           this.toast.message = msg;

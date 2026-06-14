@@ -273,7 +273,7 @@
 
           <div class="space-y-4">
             
-            <template x-for="order in sortedOrders" :key="order.id">
+            <template x-for="order in displayOrders" :key="order.id">
               <div class="glass-panel rounded-3xl overflow-hidden shadow-sm transition-all duration-300"
                 :class="order.status === '\u672a\u63a5\u55ae' ? 'order-pending-alert' : 'border border-white/50'">
                 <div class="p-4 bg-white/40 border-b border-white/40 flex flex-wrap justify-between items-center gap-2">
@@ -287,14 +287,21 @@
                   </div>
                   <div class="flex items-center space-x-3">
                     <span class="text-[11px] text-slate-600 font-bold" x-text="'下單: ' + order.timestamp"></span>
-                    <select x-model="order.status" @change="updateOrderStatus(order)"
+                    <select x-model="order.status" @change="order.grouped ? updateGroupedOrderStatus(order) : updateOrderStatus(order)"
                       :class="{ 'bg-red-500/20 text-red-900 border-red-500/20': order.status === '未接單', 'bg-yellow-500/20 text-yellow-900 border-yellow-500/20': order.status === '已接單', 'bg-blue-500/20 text-blue-900 border-blue-500/20': order.status === '製作中', 'bg-green-500/20 text-green-900 border-green-500/20': order.status === '已送出' }"
                       class="text-xs font-extrabold rounded-lg px-2.5 py-1 border focus:outline-none transition-all cursor-pointer bg-white/40">
+                      <template x-if="order.grouped">
+                        <option value="混合" disabled>混合狀態</option>
+                      </template>
                       <option value="未接單">未接單</option>
                       <option value="已接單">已接單</option>
                       <option value="製作中">製作中</option>
                       <option value="已送出">已送出</option>
+                      <option value="店家拒絕">店家拒絕</option>
                     </select>
+                    <button @click="order.grouped ? triggerDeleteGroupedOrders(order) : triggerDeleteOrder(order.id)"
+                      class="text-xs text-red-500 hover:text-red-700 font-bold rounded-xl border border-red-200 bg-red-50 px-3 py-1 transition-all"
+                      title="刪除此筆訂單">刪除訂單</button>
                   </div>
                 </div>
 
@@ -324,10 +331,10 @@
                           class="fa-solid fa-file-invoice"></i><span
                           x-text="order.needReceipt ? '本訂單【需要】收據' : '本單【不需要】收據'"></span></span>
                     </div>
-                    <span class="font-extrabold text-slate-900" x-text="'共 ' + order.items.length + ' 份素便當'"></span>
+                    <span class="font-extrabold text-slate-900" x-text="'共 ' + order.totalBentoCount + ' 份素便當'"></span>
                   </div>
                   <div class="divide-y divide-white/20">
-                    <template x-for="(item, idx) in order.items">
+                    <template x-for="(item, idx) in getOrderDisplayItems(order)playItems(order)">
                       <div class="py-2.5 flex flex-wrap justify-between items-start gap-2">
                         <div class="space-y-0.5">
                           <span class="font-bold text-slate-900 text-xs" x-text="(idx+1) + '. ' + item.name"></span>
@@ -508,6 +515,7 @@
                     <th class="px-4 py-3 w-[90px]">餐具</th>
                     <th class="px-4 py-3 w-[90px]">收據</th>
                     <th class="px-4 py-3 w-[130px]">狀態</th>
+                    <th class="px-4 py-3 w-[110px]">操作</th>
                     <th class="px-4 py-3 w-[150px]">備註</th>
                   </tr>
                 </thead>
@@ -530,7 +538,7 @@
                         x-text="order.deliveryAddress || '未註明'"></td>
                       <td class="px-4 py-3">
                         <div class="space-y-2">
-                          <template x-for="(item, idx) in order.items" :key="idx">
+                          <template x-for="(item, idx) in getOrderDisplayItems(order)" :key="idx">
                             <div class="rounded-xl border border-slate-200 bg-white/80 px-3 py-2">
                               <div class="font-black text-slate-900 text-base">
                                 <span x-text="(idx + 1) + '. ' + item.name"></span>
@@ -564,11 +572,18 @@
                       </td>
                       <td class="px-4 py-3">
                         <select x-model="order.status" @change="updateOrderStatus(order)"
-                          :class="{ 'bg-red-100 text-red-800 border-red-300': order.status === '\u672a\u63a5\u55ae', 'bg-green-100 text-green-800 border-green-300': order.status === '\u5df2\u63a5\u55ae' }"
+                          :class="{ 'bg-red-100 text-red-800 border-red-300': order.status === '\u672a\u63a5\u55ae', 'bg-rose-100 text-rose-800 border-rose-300': order.status === '店家拒絕', 'bg-green-100 text-green-800 border-green-300': order.status === '\u5df2\u63a5\u55ae' }"
                           class="text-sm font-bold rounded-xl px-3 py-2 border bg-white">
                           <option value="未接單">未接單</option>
                           <option value="已接單">已接單</option>
+                          <option value="製作中">製作中</option>
+                          <option value="已送出">已送出</option>
+                          <option value="店家拒絕">店家拒絕</option>
                         </select>
+                      </td>
+                      <td class="px-4 py-3">
+                        <button @click="triggerDeleteOrder(order.id)"
+                          class="glass-btn text-red-600 text-sm font-bold px-3 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100">刪除</button>
                       </td>
                       <td class="px-4 py-3 text-slate-600 whitespace-normal" x-text="order.note || '無'"></td>
                     </tr>
@@ -622,7 +637,7 @@
 
                       <div class="space-y-5">
                         <div class="text-2xl font-black text-slate-900">餐點明細</div>
-                        <template x-for="(item, idx) in order.items" :key="idx">
+                        <template x-for="(item, idx) in getOrderDisplayItems(order)" :key="idx">
                           <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                             <div class="flex flex-col md:flex-row md:justify-between gap-3">
                               <div class="text-2xl font-black text-slate-900"><span x-text="(idx + 1) + '. ' + item.name"></span></div>
@@ -873,7 +888,7 @@
         isLoadingSettings: false,
 
         editingDish: { id: null, name: '', priceType: 'all', specificPrice: '', vegType: '全素', available: true },
-        confirmModal: { show: false, title: '', message: '', actionType: '', targetId: null },
+        confirmModal: { show: false, title: '', message: '', actionType: '', targetId: null, targetIds: [] },
         toast: { show: false, message: '', type: 'success' },
 
         settings: {
@@ -1054,6 +1069,16 @@
             this.orders = [];
             await VegeBentoDB.clearAllOrders();
             this.showToast('今日點餐資料已全部重置！', 'warning');
+          } else if (this.confirmModal.actionType === 'deleteOrder') {
+            const idToDelete = this.confirmModal.targetId;
+            this.orders = this.orders.filter(o => o.id !== idToDelete);
+            await VegeBentoDB.deleteOrder(idToDelete);
+            this.showToast(`訂單 ${idToDelete} 已刪除。`, 'warning');
+          } else if (this.confirmModal.actionType === 'deleteGroupedOrders') {
+            const idsToDelete = this.confirmModal.targetIds || [];
+            this.orders = this.orders.filter(o => !idsToDelete.includes(o.id));
+            await Promise.all(idsToDelete.map(id => VegeBentoDB.deleteOrder(id)));
+            this.showToast(`已刪除 ${idsToDelete.length} 筆相同客製訂單。`, 'warning');
           } else if (this.confirmModal.actionType === 'deleteDish') {
             const idToDelete = this.confirmModal.targetId;
             this.mainDishes = this.mainDishes.filter(d => d.id !== idToDelete);
@@ -1206,8 +1231,8 @@
         editDish(dish) { this.editingDish = { ...dish }; },
         resetEditingDish() { this.editingDish = { id: null, name: '', priceType: 'all', specificPrice: '', vegType: '全素', available: true }; },
         goToClient() { window.location.href = 'index.html'; },
-        getTotalBentoCount() { return this.orders.reduce((sum, ord) => sum + ord.items.length, 0); },
-        getTotalTablewareCount() { return this.orders.reduce((sum, ord) => sum + (ord.needTableware ? ord.items.length : 0), 0); },
+        getTotalBentoCount() { return this.orders.reduce((sum, ord) => sum + ord.items.reduce((inner, item) => inner + (item.count || 1), 0), 0); },
+        getTotalTablewareCount() { return this.orders.reduce((sum, ord) => sum + (ord.needTableware ? ord.items.reduce((inner, item) => inner + (item.count || 1), 0) : 0), 0); },
         getTotalReceiptCount() { return this.orders.reduce((sum, ord) => sum + (ord.needReceipt ? 1 : 0), 0); },
         getPriceRuleLabel(dish) {
           if (!dish || dish.priceType === 'all') return '無預算限制';
@@ -1215,12 +1240,121 @@
           return '未設定價格條件';
         },
 
+        getOrderDisplayItems(order) {
+          const itemMap = new Map();
+          (order.items || []).forEach(item => {
+            const key = JSON.stringify({
+              name: item.name,
+              mainDish: item.mainDish,
+              rice: item.rice,
+              riceType: item.riceType,
+              price: item.price,
+              dislikes: (Array.isArray(item.dislikes) ? [...item.dislikes].sort() : []).join(','),
+              otherDislike: item.otherDislike || ''
+            });
+            if (!itemMap.has(key)) {
+              itemMap.set(key, {
+                ...item,
+                count: item.count || 1
+              });
+            } else {
+              const existing = itemMap.get(key);
+              existing.count += item.count || 1;
+            }
+          });
+          return [...itemMap.values()];
+        },
+
+        orderGroupKey(order) {
+          const normalizedItems = (order.items || []).map(item => ({
+            name: item.name,
+            mainDish: item.mainDish,
+            rice: item.rice,
+            riceType: item.riceType,
+            price: item.price,
+            count: item.count,
+            dislikes: Array.isArray(item.dislikes) ? item.dislikes : [],
+            otherDislike: item.otherDislike || ''
+          })).sort((a, b) => {
+            const labelA = `${a.name}|${a.mainDish}|${a.rice}|${a.riceType}|${a.price}|${a.count}|${a.dislikes.join(',')}|${a.otherDislike}`;
+            const labelB = `${b.name}|${b.mainDish}|${b.rice}|${b.riceType}|${b.price}|${b.count}|${b.dislikes.join(',')}|${b.otherDislike}`;
+            return labelA.localeCompare(labelB, 'zh-Hant-u-co-trad');
+          });
+          return JSON.stringify({
+            isCustomized: !!order.isCustomized,
+            items: normalizedItems
+          });
+        },
+
+        groupOrdersForDisplay(orders) {
+          const groups = [];
+          const map = new Map();
+          for (const order of orders) {
+            const orderQuantity = order.items.reduce((inner, item) => inner + (item.count || 1), 0);
+            if (!order.isCustomized) {
+              groups.push({ ...order, orderCount: 1, grouped: false, totalBentoCount: orderQuantity, totalAmount: order.totalAmount, orders: [order] });
+              continue;
+            }
+            const key = this.orderGroupKey(order);
+            if (!map.has(key)) {
+              map.set(key, {
+                orders: [],
+                representative: order,
+                totalAmount: 0,
+                totalBentoCount: 0
+              });
+            }
+            const group = map.get(key);
+            group.orders.push(order);
+            group.totalAmount += Number(order.totalAmount) || 0;
+            group.totalBentoCount += orderQuantity;
+          }
+          for (const group of map.values()) {
+            const rep = group.representative;
+            const status = group.orders.every(o => o.status === rep.status) ? rep.status : '混合';
+            groups.push({
+              ...rep,
+              orderCount: group.orders.length,
+              grouped: group.orders.length > 1,
+              totalBentoCount: group.totalBentoCount,
+              totalAmount: group.totalAmount,
+              status,
+              orders: group.orders
+            });
+          }
+          return groups.sort((a, b) => {
+            const pendingA = a.status === '未接單';
+            const pendingB = b.status === '未接單';
+            if (pendingA && !pendingB) return -1;
+            if (!pendingA && pendingB) return 1;
+            return 0;
+          });
+        },
+
+        async updateGroupedOrderStatus(group) {
+          const newStatus = group.status;
+          await Promise.all(group.orders.map(async (order) => {
+            order.status = newStatus;
+            await VegeBentoDB.saveOrder(order);
+          }));
+          this.showToast(`已將 ${group.orderCount} 筆訂單狀態更新為【${newStatus}】`);
+          await this.loadDataFromStorage();
+        },
+
+        async triggerDeleteGroupedOrders(group) {
+          this.confirmModal.title = '刪除合併客製單';
+          this.confirmModal.message = `此操作會刪除 ${group.orderCount} 筆相同客製訂單，無法還原。是否確認？`;
+          this.confirmModal.actionType = 'deleteGroupedOrders';
+          this.confirmModal.targetIds = group.orders.map(o => o.id);
+          this.confirmModal.show = true;
+        },
+
         aggregateKitchenMainDishes() {
           const dict = {};
           this.orders.forEach(ord => {
             ord.items.forEach(item => {
               const name = item.mainDish || '標準蔬食';
-              dict[name] = (dict[name] || 0) + 1;
+              dict[name] = (dict[name] || 0) + (item.count || 1);
             });
           });
           return dict;
@@ -1243,6 +1377,9 @@
             return 0;
           });
         },
+        get displayOrders() {
+          return this.groupOrdersForDisplay(this.sortedOrders);
+        },
         get filteredOrders() {
           return this.orders.filter(order => {
             const query = this.orderQuery.trim().toLowerCase();
@@ -1259,6 +1396,14 @@
           this.confirmModal.message = '此動作將清空所有顧客點餐歷史看板，該操作不可逆！是否確認清除？';
           this.confirmModal.actionType = 'clearOrders';
           this.confirmModal.targetId = null;
+          this.confirmModal.show = true;
+        },
+
+        triggerDeleteOrder(orderId) {
+          this.confirmModal.title = '刪除訂單';
+          this.confirmModal.message = '您確定要刪除此筆顧客訂單嗎？此操作不可還原。';
+          this.confirmModal.actionType = 'deleteOrder';
+          this.confirmModal.targetId = orderId;
           this.confirmModal.show = true;
         },
 
