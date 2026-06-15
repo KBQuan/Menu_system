@@ -191,11 +191,13 @@
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
     }
+
     .custom-bento-card {
       scroll-snap-align: center;
       min-width: min(90vw, 34rem);
       max-width: 34rem;
     }
+
     .custom-bento-card.active {
       border-color: rgba(16, 185, 129, 0.35);
       box-shadow: 0 25px 45px rgba(16, 185, 129, 0.14);
@@ -204,8 +206,7 @@
 </head>
 
 <body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-cover bg-center bg-fixed"
-  style="background-image: url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=2000&auto=format&fit=crop');"
-  x-data="bentoApp()"
+  style="background-image: url('background.jpg');" x-data="bentoApp()"
   x-init="init(); $watch('fontSizeLevel', v => { document.documentElement.style.fontSize = v === 0 ? '14px' : v === 2 ? '18px' : '16px'; })">
   <div class="liquid-mesh"></div>
 
@@ -235,9 +236,9 @@
     <div class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div @click="showAnnouncementsModal = true"
-          class="cursor-pointer w-11 h-11 bg-gradient-to-tr from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md text-white"
+          class="cursor-pointer w-11 h-11 bg-gradient-to-tr from-black-700 to-emerald-400 rounded-xl flex items-center justify-center shadow-md text-white hover:scale-105 active:scale-95 transition-all duration-200"
           title="查看最新公告">
-          <i class="fa-solid fa-utensils text-xl"></i>
+          <img src="logo_black.png" class="w-12 h-12 object-contain" alt="VegeTingyi Logo">
         </div>
         <div>
           <h1 class="font-bold text-lg text-slate-900 tracking-tight flex items-center gap-2">
@@ -491,7 +492,8 @@
         </div>
       </div>
 
-      <div x-show="clientForm.isCustomized" x-transition.opacity class="glass-panel p-6 space-y-4" @keydown.window="handleCustomCarouselArrow($event)">
+      <div x-show="clientForm.isCustomized" x-transition.opacity class="glass-panel p-6 space-y-4"
+        @keydown.window="handleCustomCarouselArrow($event)">
         <div class="flex flex-wrap items-center justify-between border-b border-green-900/5 pb-4 gap-3">
           <div class="flex items-center gap-3">
             <span class="text-lg p-2 bg-amber-500/10 text-amber-700 rounded-xl font-bold">
@@ -520,21 +522,24 @@
               class="glass-btn text-slate-800 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed">
               <i class="fa-solid fa-chevron-left"></i><span class="ml-1">上一位</span>
             </button>
-            <button type="button" @click="moveCustomIndex(1)" :disabled="currentCustomIndex >= clientForm.customBentos.length - 1"
+            <button type="button" @click="moveCustomIndex(1)"
+              :disabled="currentCustomIndex >= clientForm.customBentos.length - 1"
               class="glass-btn text-slate-800 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed">
               <span>下一位</span><i class="fa-solid fa-chevron-right ml-1"></i>
             </button>
           </div>
           <div class="text-xs text-slate-500 font-medium">
-            第 <span class="font-bold text-slate-800" x-text="currentCustomIndex + 1"></span> / <span x-text="clientForm.customBentos.length"></span> 位同仁
+            第 <span class="font-bold text-slate-800" x-text="currentCustomIndex + 1"></span> / <span
+              x-text="clientForm.customBentos.length"></span> 位同仁
           </div>
         </div>
 
-        <div class="custom-bento-carousel flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-1 pr-1 custom-scrollbar">
+        <div
+          class="custom-bento-carousel flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-1 pr-1 custom-scrollbar">
           <template x-for="(row, index) in clientForm.customBentos" :key="index">
-            <div class="custom-bento-card p-4 rounded-2xl border border-slate-200 bg-white/50 space-y-3 relative shrink-0 min-w-[90vw] lg:min-w-[34rem]"
-              :class="currentCustomIndex === index ? 'active border-green-300' : ''"
-              :data-index="index"
+            <div
+              class="custom-bento-card p-4 rounded-2xl border border-slate-200 bg-white/50 space-y-3 relative shrink-0 min-w-[90vw] lg:min-w-[34rem]"
+              :class="currentCustomIndex === index ? 'active border-green-300' : ''" :data-index="index"
               @click="setCurrentCustomIndex(index)">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -988,7 +993,8 @@
 
   <div x-show="showAnnouncementsModal" x-cloak
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-    <div class="liquid-glass-modal rounded-3xl max-w-xl w-full max-h-[85vh] overflow-hidden bg-white/95 shadow-2xl flex flex-col">
+    <div
+      class="liquid-glass-modal rounded-3xl max-w-xl w-full max-h-[85vh] overflow-hidden bg-white/95 shadow-2xl flex flex-col">
       <div class="flex items-center justify-between border-b border-slate-200 p-5">
         <div>
           <h3 class="text-lg font-black text-slate-900">最新公告</h3>
@@ -1514,90 +1520,90 @@
               this.editingOrderId = null;
             }
 
-          let items = [];
-          if (!this.clientForm.isCustomized) {
-            const priceVal = this.clientForm.singleBento.price === 'other' ? this.clientForm.singleBento.otherPrice : this.clientForm.singleBento.price;
-            let disStr = this.clientForm.singleBento.dislikes.join(',') + (this.clientForm.singleBento.otherDislike ? ' ' + this.clientForm.singleBento.otherDislike : '');
-            const quantity = parseInt(this.clientForm.singleBento.quantity || 1);
-            for (let i = 0; i < quantity; i++) items.push({
-              name: '統一餐盒',
-              vegType: this.clientForm.singleBento.vegType,
-              price: parseInt(priceVal || 0),
-              riceType: this.clientForm.singleBento.riceType,
-              rice: this.clientForm.singleBento.rice,
-              mainDish: this.clientForm.singleBento.mainDish || '未指定',
-              dislikes: [...this.clientForm.singleBento.dislikes],
-              otherDislike: this.clientForm.singleBento.otherDislike,
-              summary: `[統一單] ${this.clientForm.singleBento.vegType} | NT$${priceVal} | 主菜: ${this.clientForm.singleBento.mainDish} | 飯別: ${this.clientForm.singleBento.riceType} | 飯量: ${this.clientForm.singleBento.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
-              count: 1
-            });
-          } else {
-            this.clientForm.customBentos.forEach(row => {
-              const priceVal = row.price === 'other' ? row.otherPrice : row.price;
-              let disStr = row.dislikes.join(',') + (row.otherDislike ? ' ' + row.otherDislike : '');
-              items.push({
-                name: row.name,
-                vegType: row.vegType,
+            let items = [];
+            if (!this.clientForm.isCustomized) {
+              const priceVal = this.clientForm.singleBento.price === 'other' ? this.clientForm.singleBento.otherPrice : this.clientForm.singleBento.price;
+              let disStr = this.clientForm.singleBento.dislikes.join(',') + (this.clientForm.singleBento.otherDislike ? ' ' + this.clientForm.singleBento.otherDislike : '');
+              const quantity = parseInt(this.clientForm.singleBento.quantity || 1);
+              for (let i = 0; i < quantity; i++) items.push({
+                name: '統一餐盒',
+                vegType: this.clientForm.singleBento.vegType,
                 price: parseInt(priceVal || 0),
-                riceType: row.riceType,
-                rice: row.rice,
-                mainDish: row.mainDish || '未指定',
-                dislikes: [...row.dislikes],
-                otherDislike: row.otherDislike,
-                summary: `[${row.name}] ${row.vegType} | NT$${priceVal} | 主菜: ${row.mainDish} | 飯別: ${row.riceType} | 飯量: ${row.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
+                riceType: this.clientForm.singleBento.riceType,
+                rice: this.clientForm.singleBento.rice,
+                mainDish: this.clientForm.singleBento.mainDish || '未指定',
+                dislikes: [...this.clientForm.singleBento.dislikes],
+                otherDislike: this.clientForm.singleBento.otherDislike,
+                summary: `[統一單] ${this.clientForm.singleBento.vegType} | NT$${priceVal} | 主菜: ${this.clientForm.singleBento.mainDish} | 飯別: ${this.clientForm.singleBento.riceType} | 飯量: ${this.clientForm.singleBento.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
                 count: 1
               });
-            });
+            } else {
+              this.clientForm.customBentos.forEach(row => {
+                const priceVal = row.price === 'other' ? row.otherPrice : row.price;
+                let disStr = row.dislikes.join(',') + (row.otherDislike ? ' ' + row.otherDislike : '');
+                items.push({
+                  name: row.name,
+                  vegType: row.vegType,
+                  price: parseInt(priceVal || 0),
+                  riceType: row.riceType,
+                  rice: row.rice,
+                  mainDish: row.mainDish || '未指定',
+                  dislikes: [...row.dislikes],
+                  otherDislike: row.otherDislike,
+                  summary: `[${row.name}] ${row.vegType} | NT$${priceVal} | 主菜: ${row.mainDish} | 飯別: ${row.riceType} | 飯量: ${row.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
+                  count: 1
+                });
+              });
+            }
+
+            const finalDeliveryTime = this.clientForm.deliveryTimeType === 'SPECIFIC' ? this.clientForm.deliveryTimeValue : '儘速送達';
+            const orderId = 'VEG-' + Math.floor(1000 + Math.random() * 9000);
+            const timeNow = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const createdAt = new Date().toISOString();
+
+            const newOrder = {
+              id: orderId,
+              createdAt: createdAt,
+              unit: this.clientForm.unit,
+              userName: this.clientForm.userName,
+              userPhone: this.clientForm.userPhone,
+              timestamp: timeNow,
+              isCustomized: this.clientForm.isCustomized,
+              needTableware: this.clientForm.needTableware,
+              needReceipt: this.clientForm.needReceipt,
+              items: items,
+              totalAmount: this.calculateTotal(),
+              status: '未接單',
+              deliveryAddress: this.clientForm.deliveryAddress,
+              deliveryTime: finalDeliveryTime,
+              note: this.clientForm.globalNote.trim()
+            };
+
+            // 儲存至資料庫與全域狀態
+            await VegeBentoDB.saveOrder(newOrder);
+
+            this.orders.unshift(newOrder);
+            this.userHistory.unshift(newOrder);
+            this.userHistory = this.cleanupUserHistory(this.userHistory);
+
+            this.showToast(
+              wasEditing ? '訂單已成功更新！' : '訂單發送成功！',
+              'success'
+            );
+
+            // 表單初始化重置
+            this.clientForm.unit = '';
+            this.clientForm.globalNote = '';
+            this.clientForm.singleBento.quantity = 1;
+            this.clientForm.customBentos = [{ name: '同仁 1', price: '80', otherPrice: '', vegType: '全素', riceType: '', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' }];
+            this.autoSelectFirstAvailableDish();
+          } catch (error) {
+            console.error(error);
+            this.showToast('送出訂單時發生錯誤，請稍後再試。', 'danger');
+          } finally {
+            this.isSubmitting = false;
           }
-
-          const finalDeliveryTime = this.clientForm.deliveryTimeType === 'SPECIFIC' ? this.clientForm.deliveryTimeValue : '儘速送達';
-          const orderId = 'VEG-' + Math.floor(1000 + Math.random() * 9000);
-          const timeNow = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
-          const createdAt = new Date().toISOString();
-
-          const newOrder = {
-            id: orderId,
-            createdAt: createdAt,
-            unit: this.clientForm.unit,
-            userName: this.clientForm.userName,
-            userPhone: this.clientForm.userPhone,
-            timestamp: timeNow,
-            isCustomized: this.clientForm.isCustomized,
-            needTableware: this.clientForm.needTableware,
-            needReceipt: this.clientForm.needReceipt,
-            items: items,
-            totalAmount: this.calculateTotal(),
-            status: '未接單',
-            deliveryAddress: this.clientForm.deliveryAddress,
-            deliveryTime: finalDeliveryTime,
-            note: this.clientForm.globalNote.trim()
-          };
-
-          // 儲存至資料庫與全域狀態
-          await VegeBentoDB.saveOrder(newOrder);
-
-          this.orders.unshift(newOrder);
-          this.userHistory.unshift(newOrder);
-          this.userHistory = this.cleanupUserHistory(this.userHistory);
-
-          this.showToast(
-            wasEditing ? '訂單已成功更新！' : '訂單發送成功！',
-            'success'
-          );
-
-          // 表單初始化重置
-          this.clientForm.unit = '';
-          this.clientForm.globalNote = '';
-          this.clientForm.singleBento.quantity = 1;
-          this.clientForm.customBentos = [{ name: '同仁 1', price: '80', otherPrice: '', vegType: '全素', riceType: '', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' }];
-          this.autoSelectFirstAvailableDish();
-        } catch (error) {
-          console.error(error);
-          this.showToast('送出訂單時發生錯誤，請稍後再試。', 'danger');
-        } finally {
-          this.isSubmitting = false;
-        }
-      },
+        },
 
         showToast(msg, type = 'success') {
           this.toast.message = msg;

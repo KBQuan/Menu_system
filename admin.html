@@ -44,27 +44,25 @@
     html {
       transition: font-size 0.2s ease;
     }
-
   </style>
 </head>
 
 <body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-cover bg-center bg-fixed"
-  style="background-image: url('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=2000&auto=format&fit=crop');"
-  x-data="bentoAdminApp()"
+  style="background-image: url('background.jpg');" x-data="bentoAdminApp()"
   x-init="init(); $watch('settings.adminFontSize', v => { document.documentElement.style.fontSize = v + 'px'; queueSettingsSave(); }); $watch('settings.clientFontSize', () => queueSettingsSave());">
   <header class="border-b border-white/20 bg-white/55 backdrop-blur-md shadow-sm sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16 items-center">
         <div @click="goToClient()" class="flex items-center space-x-3 cursor-pointer group select-none" title="返回前台點餐">
           <div
-            class="bg-gradient-to-tr from-brand-500 to-green-700 text-white p-2.5 rounded-2xl shadow-md group-hover:scale-105 transition-all">
-            <i class="fa-solid fa-sliders text-xl"></i>
+            class="cursor-pointer w-11 h-11 bg-gradient-to-tr from-black-700 to-emerald-400 rounded-xl flex items-center justify-center shadow-md text-white hover:scale-105 active:scale-95 transition-all duration-200">
+            <img src="logo_black.png" class="w-12 h-12 object-contain" alt="VegeTingyi Logo">
           </div>
           <div>
             <span
-              class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-brand-700 to-green-800 bg-clip-text text-transparent">VegeTingyi
-              </span>
-            <span class="text-xs block text-emerald-800/80 font-bold">管理系統</span>
+              class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-black to-black bg-clip-text text-transparent">VegeTingyi
+            </span>
+            <span class="text-xs block text-black-800/80 font-bold">管理系統</span>
           </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -178,27 +176,27 @@
       <div class="border-b border-white/40 flex flex-wrap justify-between items-center mb-6 gap-2">
         <nav class="flex flex-wrap gap-4 pb-2">
           <button @click="adminTab = 'orders'"
-            :class="adminTab === 'orders' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
+            :class="adminTab === 'orders' ? 'border-brand-600 text-green font-black' : 'border-transparent text-green-700 hover:text-green-400 font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-bowl-food"></i><span>今日訂單與備料統計</span>
           </button>
           <button @click="adminTab = 'dishes'"
-            :class="adminTab === 'dishes' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
+            :class="adminTab === 'dishes' ? 'border-brand-600 text-green font-black' : 'border-transparent text-green-700 hover:text-green-400 font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-utensils"></i><span>每日素食主菜管理</span>
           </button>
           <button @click="adminTab = 'allOrders'"
-            :class="adminTab === 'allOrders' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
+            :class="adminTab === 'allOrders' ? 'border-brand-600 text-green font-black' : 'border-transparent text-green-700 hover:text-green-400 font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-magnifying-glass"></i><span>全部訂單查詢</span>
           </button>
           <button @click="adminTab = 'content'"
-            :class="adminTab === 'content' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
+            :class="adminTab === 'content' ? 'border-brand-600 text-green font-black' : 'border-transparent text-green-700 hover:text-green-400 font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-image"></i><span>照片與公告管理</span>
           </button>
           <button @click="adminTab = 'settings'"
-            :class="adminTab === 'settings' ? 'border-brand-600 text-white font-black' : 'border-transparent text-white/70 hover:text-white font-bold'"
+            :class="adminTab === 'settings' ? 'border-brand-600 text-green font-black' : 'border-transparent text-green-700 hover:text-green-400 font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
             <i class="fa-solid fa-key"></i><span>密碼設置區</span>
           </button>
@@ -272,7 +270,7 @@
           </div>
 
           <div class="space-y-4">
-            
+
             <template x-for="order in displayOrders" :key="order.id">
               <div class="glass-panel rounded-3xl overflow-hidden shadow-sm transition-all duration-300"
                 :class="order.status === '\u672a\u63a5\u55ae' ? 'order-pending-alert' : 'border border-white/50'">
@@ -287,7 +285,8 @@
                   </div>
                   <div class="flex items-center space-x-3">
                     <span class="text-[11px] text-slate-600 font-bold" x-text="'下單: ' + order.timestamp"></span>
-                    <select x-model="order.status" @change="order.grouped ? updateGroupedOrderStatus(order) : updateOrderStatus(order)"
+                    <select x-model="order.status"
+                      @change="order.grouped ? updateGroupedOrderStatus(order) : updateOrderStatus(order)"
                       :class="{ 'bg-red-500/20 text-red-900 border-red-500/20': order.status === '未接單', 'bg-yellow-500/20 text-yellow-900 border-yellow-500/20': order.status === '已接單', 'bg-blue-500/20 text-blue-900 border-blue-500/20': order.status === '製作中', 'bg-green-500/20 text-green-900 border-green-500/20': order.status === '已送出' }"
                       class="text-xs font-extrabold rounded-lg px-2.5 py-1 border focus:outline-none transition-all cursor-pointer bg-white/40">
                       <template x-if="order.grouped">
@@ -483,7 +482,8 @@
                   class="glass-btn text-sm font-bold px-4 py-2 rounded-xl flex items-center space-x-2 text-slate-900 bg-white/90 border border-slate-200 hover:bg-white">
                   <i class="fa-solid fa-tv"></i><span>大畫面檢視</span>
                 </button>
-                <div class="text-base text-slate-500 font-bold">共有 <span x-text="filteredOrders.length"></span> 筆訂單</div>
+                <div class="text-base text-slate-500 font-bold">共有 <span x-text="filteredOrders.length"></span> 筆訂單
+                </div>
               </div>
             </div>
             <div class="grid grid-cols-1 gap-3 text-base">
@@ -612,8 +612,10 @@
                       <div class="flex flex-col xl:flex-row justify-between gap-6 mb-6">
                         <div class="space-y-3">
                           <div class="text-3xl font-black text-slate-900">訂單：<span x-text="order.id"></span></div>
-                          <div class="text-2xl text-slate-700">單位：<span class="font-bold text-slate-900" x-text="order.unit"></span></div>
-                          <div class="text-2xl text-slate-700">電話：<span class="font-bold text-slate-900" x-text="order.userPhone || '未提供'"></span></div>
+                          <div class="text-2xl text-slate-700">單位：<span class="font-bold text-slate-900"
+                              x-text="order.unit"></span></div>
+                          <div class="text-2xl text-slate-700">電話：<span class="font-bold text-slate-900"
+                              x-text="order.userPhone || '未提供'"></span></div>
                         </div>
                         <div class="space-y-3 text-right">
                           <div class="text-3xl font-black text-brand-700" x-text="'NT$' + order.totalAmount"></div>
@@ -625,13 +627,19 @@
                       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="rounded-3xl bg-brand-50 p-5 border border-brand-100 text-lg text-slate-700">
                           <div class="font-black mb-3">配送資訊</div>
-                          <div>送達時間：<span class="font-bold text-slate-900" x-text="order.deliveryTime || '未註明'"></span></div>
-                          <div class="mt-2">地址：<span class="font-bold text-slate-900" x-text="order.deliveryAddress || '未註明'"></span></div>
+                          <div>送達時間：<span class="font-bold text-slate-900" x-text="order.deliveryTime || '未註明'"></span>
+                          </div>
+                          <div class="mt-2">地址：<span class="font-bold text-slate-900"
+                              x-text="order.deliveryAddress || '未註明'"></span></div>
                         </div>
                         <div class="rounded-3xl bg-brand-50 p-5 border border-brand-100 text-lg text-slate-700">
                           <div class="font-black mb-3">快速狀態</div>
-                          <div>餐具：<span class="font-bold" :class="order.needTableware ? 'text-emerald-700' : 'text-rose-600'" x-text="order.needTableware ? '需要' : '不需要'"></span></div>
-                          <div class="mt-2">收據：<span class="font-bold" :class="order.needReceipt ? 'text-emerald-700' : 'text-rose-600'" x-text="order.needReceipt ? '需要' : '不需要'"></span></div>
+                          <div>餐具：<span class="font-bold"
+                              :class="order.needTableware ? 'text-emerald-700' : 'text-rose-600'"
+                              x-text="order.needTableware ? '需要' : '不需要'"></span></div>
+                          <div class="mt-2">收據：<span class="font-bold"
+                              :class="order.needReceipt ? 'text-emerald-700' : 'text-rose-600'"
+                              x-text="order.needReceipt ? '需要' : '不需要'"></span></div>
                         </div>
                       </div>
 
@@ -640,15 +648,20 @@
                         <template x-for="(item, idx) in getOrderDisplayItems(order)" :key="idx">
                           <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                             <div class="flex flex-col md:flex-row md:justify-between gap-3">
-                              <div class="text-2xl font-black text-slate-900"><span x-text="(idx + 1) + '. ' + item.name"></span></div>
-                              <div class="text-xl text-slate-700">NT$<span class="font-black" x-text="item.price"></span> × <span class="font-black" x-text="item.count"></span></div>
+                              <div class="text-2xl font-black text-slate-900"><span
+                                  x-text="(idx + 1) + '. ' + item.name"></span></div>
+                              <div class="text-xl text-slate-700">NT$<span class="font-black"
+                                  x-text="item.price"></span> × <span class="font-black" x-text="item.count"></span>
+                              </div>
                             </div>
                             <div class="mt-3 flex flex-wrap gap-4 text-lg text-slate-700">
                               <div>主菜：<span class="font-bold text-slate-900" x-text="item.mainDish"></span></div>
                               <div>飯量：<span class="font-bold text-slate-900" x-text="item.rice"></span></div>
-                              <div x-show="item.riceType">飯別：<span class="font-bold text-slate-900" x-text="item.riceType"></span></div>
+                              <div x-show="item.riceType">飯別：<span class="font-bold text-slate-900"
+                                  x-text="item.riceType"></span></div>
                             </div>
-                            <div x-show="item.dislikes.length > 0 || item.otherDislike" class="mt-4 rounded-3xl bg-rose-100 p-4 text-base text-rose-800">
+                            <div x-show="item.dislikes.length > 0 || item.otherDislike"
+                              class="mt-4 rounded-3xl bg-rose-100 p-4 text-base text-rose-800">
                               忌口：<span x-text="[...item.dislikes, item.otherDislike].filter(Boolean).join('、')"></span>
                             </div>
                           </div>
@@ -661,7 +674,8 @@
                     </div>
                   </template>
 
-                  <div x-show="filteredOrders.length === 0" class="text-center py-24 text-white text-2xl">目前沒有符合的訂單。</div>
+                  <div x-show="filteredOrders.length === 0" class="text-center py-24 text-white text-2xl">目前沒有符合的訂單。
+                  </div>
                 </div>
               </div>
             </div>
