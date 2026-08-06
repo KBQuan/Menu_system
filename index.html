@@ -334,8 +334,8 @@
               <i class="fa-solid fa-clipboard-list"></i>
             </span>
             <div>
-              <h2 class="font-bold text-base text-slate-900">購基本資訊</h2>
-              <p class="text-xs text-slate-500 font-medium mt-0.5">請確實輸入單位與聯絡電話，以利後台配餐流程</p>
+              <h2 class="font-bold text-base text-slate-900">訂購基本資訊</h2>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">請確實輸入，以利後台配餐</p>
             </div>
           </div>
         </div>
@@ -344,13 +344,13 @@
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">訂購單位<span
                 class="text-rose-500">*</span></label>
-            <input type="text" x-model="clientForm.unit" placeholder="例如：研發部 / 行銷課"
+            <input type="text" x-model="clientForm.unit" placeholder="例如：庭藝素食館"
               class="w-full glass-input rounded-xl px-4 py-3 text-sm font-medium focus:outline-none">
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">聯絡電話<span
                 class="text-rose-500">*</span></label>
-            <input type="tel" x-model="clientForm.userPhone" placeholder="例如：0912-345-678"
+            <input type="tel" x-model="clientForm.userPhone" placeholder="例如：0912345678"
               class="w-full glass-input rounded-xl px-4 py-3 text-sm font-medium focus:outline-none">
           </div>
           <div class="sm:col-span-2">
@@ -360,7 +360,7 @@
             <div class="relative">
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"><i
                   class="fa-solid fa-location-dot"></i></span>
-              <input type="text" x-model="clientForm.deliveryAddress" placeholder="如需外送請填寫地址，可留空"
+              <input type="text" x-model="clientForm.deliveryAddress" placeholder="如新客戶、新地址需填寫地址，其餘可留空"
                 class="w-full glass-input rounded-xl pl-8 pr-3 py-3 text-sm font-medium focus:outline-none">
             </div>
           </div>
@@ -381,7 +381,7 @@
             </template>
             <template x-if="!clientForm.isCustomized">
               <span class="inline-flex items-center gap-2">
-                <span>開放</span><i class="fa-solid fa-arrow-right text-[10px]"></i><span>為每位同仁客製餐點</span>
+                <span>開放</span><i class="fa-solid fa-arrow-right text-[10px]"></i><span>每位同仁餐點客製</span>
               </span>
             </template>
           </button>
@@ -412,10 +412,10 @@
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">預算價位</label>
             <select x-model="clientForm.singleBento.price" @change="filterMainDishes(clientForm.singleBento)"
               class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
-              <option value="70">NT$ 70 </option>
               <option value="80">NT$ 80 </option>
               <option value="90">NT$ 90 </option>
               <option value="100">NT$ 100 </option>
+              <option value="110">NT$ 110 </option>
               <option value="other">自訂其他金額</option>
             </select>
             <template x-if="clientForm.singleBento.price === 'other'">
@@ -501,7 +501,7 @@
             </span>
             <div>
               <h2 class="font-bold text-base text-slate-900">客製化訂單</h2>
-              <p class="text-xs text-slate-500 font-medium mt-0.5">每位同仁可自由決定價位、飯量、主菜與忌口</p>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">可為同仁客製化價位、飯量、主菜與忌口項目</p>
             </div>
           </div>
           <div class="flex flex-wrap gap-2 items-center">
@@ -676,7 +676,7 @@
 
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">總備註說明</label>
-            <textarea x-model="clientForm.globalNote" rows="2" placeholder="如：全部外送外盒請綁紅線，或有其他特殊需求..."
+            <textarea x-model="clientForm.globalNote" rows="2" placeholder="如：於11:00前送達，或其他特殊需求..."
               class="w-full glass-input rounded-xl px-3 py-2 text-xs font-medium focus:outline-none resize-none"></textarea>
           </div>
         </div>
@@ -688,8 +688,8 @@
             <div class="flex items-center gap-2">
               <i class="fa-solid fa-utensils text-amber-700 text-sm"></i>
               <div>
-                <p class="text-sm font-bold text-slate-700">需要免洗餐具</p>
-                <p class="text-[10px] text-slate-500">勾選後隨餐附上免洗組</p>
+                <p class="text-sm font-bold text-slate-700">需要免洗筷</p>
+                <p class="text-[10px] text-slate-500">隨餐附上免洗筷</p>
               </div>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
@@ -705,7 +705,7 @@
               <i class="fa-solid fa-file-invoice text-amber-500 text-sm"></i>
               <div>
                 <p class="text-sm font-bold text-slate-700">需要收據</p>
-                <p class="text-[10px] text-slate-500">勾選後將於配送時附上收據</p>
+                <p class="text-[10px] text-slate-500">配送時附上收據</p>
               </div>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
