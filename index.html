@@ -261,25 +261,26 @@
       </nav>
 
       <div class="flex items-center gap-2">
-        <span :class="orderClosed ? 'bg-red-500/20 text-red-800 border-red-500/20' : 'bg-emerald-500/20 text-emerald-800 border-emerald-500/20'"
-          class="text-[10px] font-bold px-2 py-0.5 border rounded-md whitespace-nowrap"
-          x-text="orderClosed ? '系統截止中' : '系統開放中'"></span>
-        <div class="flex items-center gap-1.5 bg-white/50 backdrop-blur-sm border border-slate-200 rounded-xl px-1.5 py-1"
+        
+        <div class="flex items-center gap-1.5 bg-white/50 backdrop-blur-sm border border-slate-200 rounded-full px-2 py-1"
           title="文字大小調整">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1 hidden sm:inline">字級</span>
           <button @click="fontSizeLevel = 0"
             :class="fontSizeLevel === 0 ? 'bg-amber-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
-            class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
+            class="w-7 h-7 rounded-full font-black transition-all duration-150 flex items-center justify-center"
             style="font-size: 11px;" title="小字">A</button>
           <button @click="fontSizeLevel = 1"
             :class="fontSizeLevel === 1 ? 'bg-amber-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
-            class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
+            class="w-7 h-7 rounded-full font-black transition-all duration-150 flex items-center justify-center"
             style="font-size: 14px;" title="標準字">A</button>
           <button @click="fontSizeLevel = 2"
             :class="fontSizeLevel === 2 ? 'bg-amber-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
-            class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
+            class="w-7 h-7 rounded-full font-black transition-all duration-150 flex items-center justify-center"
             style="font-size: 17px;" title="大字">A</button>
         </div>
+        <span :class="orderClosed ? 'bg-red-500/20 text-red-800 border-red-500/20' : 'bg-emerald-500/20 text-emerald-800 border-emerald-500/20'"
+          class="text-[10px] font-bold px-3 py-1 border rounded-full whitespace-nowrap"
+          x-text="orderClosed ? '系統截止中' : '系統開放中'"></span>
       </div>
     </div>
   </header>
