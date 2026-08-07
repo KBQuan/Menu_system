@@ -248,7 +248,7 @@
         </div>
       </div>
 
-      <nav class="tab-segment hidden md:inline-grid">
+      <nav class="tab-segment hidden md:inline-grid md:ml-auto md:mr-4">
         <button @click="activeTab = 'client'; showHistoryModal = false"
           :class="['tab-button', activeTab === 'client' ? 'tab-active' : '']"
           class="px-5 py-2 text-sm transition-all duration-200 flex items-center justify-center gap-2">
@@ -260,21 +260,26 @@
         </button>
       </nav>
 
-      <div class="flex items-center gap-1.5 bg-white/50 backdrop-blur-sm border border-slate-200 rounded-xl px-1.5 py-1"
-        title="文字大小調整">
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1 hidden sm:inline">字級</span>
-        <button @click="fontSizeLevel = 0"
-          :class="fontSizeLevel === 0 ? 'bg-amber-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
-          class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
-          style="font-size: 11px;" title="小字">A</button>
-        <button @click="fontSizeLevel = 1"
-          :class="fontSizeLevel === 1 ? 'bg-amber-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
-          class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
-          style="font-size: 14px;" title="標準字">A</button>
-        <button @click="fontSizeLevel = 2"
-          :class="fontSizeLevel === 2 ? 'bg-amber-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
-          class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
-          style="font-size: 17px;" title="大字">A</button>
+      <div class="flex items-center gap-2">
+        <span :class="orderClosed ? 'bg-red-500/20 text-red-800 border-red-500/20' : 'bg-emerald-500/20 text-emerald-800 border-emerald-500/20'"
+          class="text-[10px] font-bold px-2 py-0.5 border rounded-md whitespace-nowrap"
+          x-text="orderClosed ? '系統截止中' : '系統開放中'"></span>
+        <div class="flex items-center gap-1.5 bg-white/50 backdrop-blur-sm border border-slate-200 rounded-xl px-1.5 py-1"
+          title="文字大小調整">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1 hidden sm:inline">字級</span>
+          <button @click="fontSizeLevel = 0"
+            :class="fontSizeLevel === 0 ? 'bg-amber-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+            class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
+            style="font-size: 11px;" title="小字">A</button>
+          <button @click="fontSizeLevel = 1"
+            :class="fontSizeLevel === 1 ? 'bg-amber-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+            class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
+            style="font-size: 14px;" title="標準字">A</button>
+          <button @click="fontSizeLevel = 2"
+            :class="fontSizeLevel === 2 ? 'bg-amber-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'"
+            class="w-7 h-7 rounded-lg font-black transition-all duration-150 flex items-center justify-center"
+            style="font-size: 17px;" title="大字">A</button>
+        </div>
       </div>
     </div>
   </header>
@@ -473,8 +478,11 @@
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">精選主餐</label>
             <select x-model="clientForm.singleBento.mainDish"
               class="w-full glass-input text-amber-900 font-bold rounded-xl px-3 py-2.5 text-sm focus:outline-none">
+              <template x-if="getAvailableDishesForPrice(clientForm.singleBento).length > 0">
+                <option value="" disabled x-show="!clientForm.singleBento.mainDish">請選擇精選主餐</option>
+              </template>
               <template x-if="getAvailableDishesForPrice(clientForm.singleBento).length === 0">
-                <option disabled>目前尚無精選主餐，請管理員上架</option>
+                <option value="" disabled>目前尚無精選主餐，請管理員上架</option>
               </template>
               <template x-for="dish in getAvailableDishesForPrice(clientForm.singleBento)" :key="dish.id">
                 <option :value="dish.name" x-text="dish.name + ' · ' + dish.vegType"></option>
@@ -626,6 +634,9 @@
                   <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">精選主餐</label>
                   <select x-model="row.mainDish"
                     class="w-full glass-input text-amber-900 font-bold rounded-xl px-2 py-1.5 text-xs focus:outline-none">
+                    <template x-if="getAvailableDishesForPrice(row).length > 0">
+                      <option value="" disabled x-show="!row.mainDish">請選擇精選主餐</option>
+                    </template>
                     <template x-for="dish in getAvailableDishesForPrice(row)" :key="dish.id">
                       <option :value="dish.name" x-text="dish.name + ' · ' + dish.vegType"></option>
                     </template>
@@ -1096,6 +1107,7 @@
         // 編輯模式：記錄正在修改的原始訂單 ID（null 表示新增模式）
         editingOrderId: null,
         isSubmitting: false,
+        orderClosed: false,
 
         toast: { show: false, message: '', type: 'success' },
 
@@ -1143,9 +1155,43 @@
 
         async applyClientFontSizeSetting() {
           const settings = await VegeBentoDB.getAdminSettings();
-          if (settings && settings.clientFontSize) {
-            document.documentElement.style.fontSize = settings.clientFontSize + 'px';
+          if (settings) {
+            if (settings.clientFontSize) {
+              document.documentElement.style.fontSize = settings.clientFontSize + 'px';
+            }
+            this.orderClosed = this.getAutoReopenedOrderClosed(settings);
           }
+        },
+
+        getAutoReopenedOrderClosed(settings) {
+          if (!settings.orderClosed || !settings.orderClosedAt) {
+            return false;
+          }
+
+          const now = new Date();
+          const closedAt = new Date(settings.orderClosedAt);
+          if (Number.isNaN(closedAt.getTime())) {
+            return settings.orderClosed;
+          }
+
+          const resetTime = settings.orderResetTime || '14:00';
+          const [resetHour, resetMinute] = resetTime.split(':').map(v => Number(v));
+          if (Number.isNaN(resetHour) || Number.isNaN(resetMinute)) {
+            return settings.orderClosed;
+          }
+
+          const todayAtReset = new Date(now);
+          todayAtReset.setHours(resetHour, resetMinute, 0, 0);
+
+          if (now >= todayAtReset) {
+            const closedAtTodayAtReset = new Date(closedAt);
+            closedAtTodayAtReset.setHours(resetHour, resetMinute, 0, 0);
+            if (closedAt < closedAtTodayAtReset) {
+              return false;
+            }
+          }
+
+          return settings.orderClosed;
         },
 
         async loadDataFromStorage() {
@@ -1538,6 +1584,11 @@
             return;
           }
           this.isSubmitting = true;
+          if (this.orderClosed) {
+            this.showToast('目前已截止訂單，暫時無法送出。', 'danger');
+            this.isSubmitting = false;
+            return;
+          }
           try {
             if (!this.clientForm.unit.trim()) {
               this.showToast('請務必填寫「訂購單位」！', 'danger');
@@ -1570,6 +1621,10 @@
 
             let items = [];
             if (!this.clientForm.isCustomized) {
+              const availableDishes = this.getAvailableDishesForPrice(this.clientForm.singleBento);
+              if (!this.clientForm.singleBento.mainDish && availableDishes.length > 0) {
+                this.clientForm.singleBento.mainDish = availableDishes[0].name;
+              }
               const priceVal = this.clientForm.singleBento.price === 'other' ? this.clientForm.singleBento.otherPrice : this.clientForm.singleBento.price;
               let disStr = this.clientForm.singleBento.dislikes.join(',') + (this.clientForm.singleBento.otherDislike ? ' ' + this.clientForm.singleBento.otherDislike : '');
               const quantity = parseInt(this.clientForm.singleBento.quantity || 1);
@@ -1587,6 +1642,10 @@
               });
             } else {
               this.clientForm.customBentos.forEach(row => {
+                const availableDishes = this.getAvailableDishesForPrice(row);
+                if (!row.mainDish && availableDishes.length > 0) {
+                  row.mainDish = availableDishes[0].name;
+                }
                 const priceVal = row.price === 'other' ? row.otherPrice : row.price;
                 let disStr = row.dislikes.join(',') + (row.otherDislike ? ' ' + row.otherDislike : '');
                 items.push({

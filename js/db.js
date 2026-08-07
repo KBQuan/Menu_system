@@ -193,10 +193,13 @@ const VegeBentoDB = {
 
         if (error) throw error;
 
-        // 更新本地備援以反映最新雲端資料
         const orders = this.getLocalOrders();
         const index = orders.findIndex(o => o.id === order.id);
-        if (index > -1) orders[index] = order; else orders.push(order);
+        if (index > -1) {
+          orders[index] = order;
+        } else {
+          orders.push(order);
+        }
         localStorage.setItem('vege_bento_orders', JSON.stringify(orders));
 
         return data;
@@ -206,7 +209,7 @@ const VegeBentoDB = {
       }
     }
 
-    // 本地儲存（降級）
+    // 本地儲存（降級)
     const orders = this.getLocalOrders();
     const index = orders.findIndex(o => o.id === order.id);
     if (index > -1) {
@@ -349,7 +352,10 @@ const VegeBentoDB = {
             receiptByDefault: data.receipt_by_default || false,
             defaultDeliveryAddress: data.default_delivery_address || '',
             deliveryAddressHint: data.delivery_address_hint || '',
-            requireDeliveryAddress: data.require_delivery_address || false
+            requireDeliveryAddress: data.require_delivery_address || false,
+            orderClosed: data.order_closed || false,
+            orderClosedAt: data.order_closed_at || null,
+            orderResetTime: data.order_reset_time || '14:00'
           };
           return { ...cloudSettings, ...localSettings };
         }
@@ -378,7 +384,10 @@ const VegeBentoDB = {
           receipt_by_default: settings.receiptByDefault,
           default_delivery_address: settings.defaultDeliveryAddress || '',
           delivery_address_hint: settings.deliveryAddressHint || '',
-          require_delivery_address: settings.requireDeliveryAddress
+          require_delivery_address: settings.requireDeliveryAddress,
+          order_closed: settings.orderClosed || false,
+          order_closed_at: settings.orderClosedAt || null,
+          order_reset_time: settings.orderResetTime || '14:00'
         };
         const { error } = await supabaseClient
           .from('vege_bento_admin_settings')

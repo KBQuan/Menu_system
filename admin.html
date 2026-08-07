@@ -198,7 +198,7 @@
           <button @click="adminTab = 'settings'"
             :class="adminTab === 'settings' ? 'border-brand-600 text-brand-700 font-black' : 'border-transparent text-amber-800 hover:text-amber-600 font-bold'"
             class="pb-2 px-1 border-b-2 text-sm transition-all flex items-center space-x-2">
-            <i class="fa-solid fa-key"></i><span>密碼設置區</span>
+            <i class="fa-solid fa-key"></i><span>密碼/結單設置區</span>
           </button>
         </nav>
         <div class="flex flex-wrap gap-2 mb-2">
@@ -206,18 +206,6 @@
             class="glass-btn text-xs font-black px-3.5 py-2 rounded-xl flex items-center space-x-1.5 text-brand-700 hover:scale-105 active:scale-95 transition-all shadow-sm border border-brand-200">
             <i class="fa-solid fa-arrows-rotate"></i>
             <span>雲端資料重新整理</span>
-          </button>
-          <button @click="syncLocalDataToCloud()"
-            class="glass-btn text-xs font-black px-3.5 py-2 rounded-xl flex items-center space-x-1.5 text-amber-800 hover:scale-105 active:scale-95 transition-all shadow-sm border border-amber-200">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
-            <span>本機資料匯入雲端</span>
-          </button>
-          <input id="ordersImportFile" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" class="hidden"
-            onchange="(async function(f){ if(!f.files || f.files.length===0) return; try{ const res = await VegeBentoDB.importOrdersFromFile(f.files[0]); alert('匯入完成：' + (res.inserted || 0) + ' 筆 (來源：' + res.source + ')'); }catch(e){ alert('匯入失敗: ' + (e.message || e)); } })(this)" />
-          <button onclick="document.getElementById('ordersImportFile').click()"
-            class="glass-btn text-xs font-black px-3.5 py-2 rounded-xl flex items-center space-x-1.5 text-slate-700 hover:scale-105 active:scale-95 transition-all shadow-sm border border-slate-200">
-            <i class="fa-solid fa-file-import"></i>
-            <span>匯入訂單 (CSV/TSV)</span>
           </button>
         </div>
       </div>
@@ -227,7 +215,7 @@
           <div class="glass-panel rounded-3xl p-5 space-y-4">
             <h4 class="text-sm font-black text-slate-900 tracking-wider uppercase border-b border-white/40 pb-2">
               今日廚房總備料匯總看板</h4>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="bg-white/50 border border-white/70 p-3 rounded-2xl text-center">
                 <span class="text-[10px] block font-bold text-slate-600">總點餐盒數</span>
                 <span class="text-2xl font-black text-brand-700" x-text="getTotalBentoCount()">0</span>
@@ -239,6 +227,10 @@
               <div class="bg-white/50 border border-white/70 p-3 rounded-2xl text-center">
                 <span class="text-[10px] block font-bold text-slate-600">需要收據訂單數</span>
                 <span class="text-2xl font-black text-brand-700" x-text="getTotalReceiptCount()">0</span>
+              </div>
+              <div class="bg-white/50 border border-white/70 p-3 rounded-2xl text-center">
+                <span class="text-[10px] block font-bold text-slate-600">今日總營收</span>
+                <span class="text-2xl font-black text-amber-800" x-text="formatCurrency(getTotalRevenue())">NT$ 0</span>
               </div>
             </div>
             <div class="bg-amber-900/90 backdrop-blur-md p-4 rounded-2xl space-y-2 border border-white/10 text-white">
@@ -260,8 +252,13 @@
         <div class="lg:col-span-8 space-y-4">
           <div class="flex justify-between items-center">
             <h3 class="text-base font-black text-white flex items-center space-x-1.5">
-              <i class="fa-solid fa-list-check text-brand-600"></i>
-              <span>顧客點餐板</span>
+              
+              <span class="inline-flex items-center px-3 py-1 rounded-full border border-brand-600 bg-amber-900/10 text-brand-600">
+                <i class="fa-solid fa-list-check text-brand-600"></i>
+                <p>&nbsp;</p>
+                顧客點餐板
+
+              </span>
             </h3>
             <button x-show="orders.length > 0" @click="triggerClearAllOrders()"
               class="text-xs text-red-300 hover:text-red-700 font-bold flex items-center space-x-1">
@@ -794,6 +791,35 @@
 
       <div x-show="adminTab === 'settings'" class="grid grid-cols-1 lg:grid-cols-2 gap-8" x-transition>
         <div class="space-y-6">
+          <div class="glass-panel rounded-3xl p-6 space-y-4">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h4 class="text-base font-black text-slate-900">訂單控制設定</h4>
+                <p class="text-xs text-slate-500 mt-1">啟用後前台將暫停接單，適用於每日訂購截止時段。</p>
+              </div>
+              <label class="inline-flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+                <input type="checkbox" x-model="settings.orderClosed" @change="onOrderClosedChange()"
+                  class="h-5 w-5 rounded border-slate-300 text-amber-600 focus:ring-amber-500" />
+                <span class="font-bold">訂單已截止</span>
+              </label>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="rounded-3xl border border-white/20 bg-white/20 backdrop-blur-md p-4 shadow-lg shadow-slate-500/10">
+                <label class="block text-xs font-bold text-slate-500 mb-2">每日重新開啟時間</label>
+                <input type="time" x-model="settings.orderResetTime" @change="queueSettingsSave()"
+                  class="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm bg-white/90" />
+                <p class="text-[11px] text-slate-500 mt-1">超過該時間後，訂單截止會重製。</p>
+              </div>
+              <div class="rounded-3xl border border-white/20 bg-white/20 backdrop-blur-md p-4 shadow-lg shadow-slate-500/10">
+                <label class="block text-xs font-bold text-slate-500 mb-2">目前設定</label>
+                <div class="space-y-2 text-sm text-slate-700">
+                  <p>重製時間：<span x-text="settings.orderResetTime || '14:00'"></span></p>
+                  <p>訂單狀態：<span x-text="settings.orderClosed ? '截止中' : '開放中'" :class="settings.orderClosed ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'"></span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 色彩解鎖密碼設定 -->
           <div class="glass-panel rounded-3xl p-6 space-y-4">
             <h4 class="text-base font-black text-slate-900 flex items-center space-x-2">
@@ -912,6 +938,9 @@
           defaultDeliveryAddress: '',
           deliveryAddressHint: '',
           requireDeliveryAddress: false,
+          orderClosed: false,
+          orderClosedAt: null,
+          orderResetTime: '14:00',
           colorPassword: ['黃', '紅', '紅']
         },
 
@@ -1038,9 +1067,14 @@
             if (!this.settings.colorPassword || !Array.isArray(this.settings.colorPassword)) {
               this.settings.colorPassword = ['黃', '紅', '紅'];
             }
+            if (!this.settings.orderResetTime) {
+              this.settings.orderResetTime = '14:00';
+            }
             // 載入設定後同步根字級
             document.documentElement.style.fontSize = this.settings.adminFontSize + 'px';
             this.isLoadingSettings = false;
+            this.checkOrderClosedAutoReopen();
+            this.scheduleOrderClosedCheck();
           }
         },
 
@@ -1050,6 +1084,70 @@
           this.settingsSaveTimer = setTimeout(async () => {
             await VegeBentoDB.saveAdminSettings(this.settings);
           }, 350);
+        },
+
+        onOrderClosedChange() {
+          if (this.settings.orderClosed) {
+            this.settings.orderClosedAt = new Date().toISOString();
+          } else {
+            this.settings.orderClosedAt = null;
+          }
+          this.queueSettingsSave();
+        },
+
+        checkOrderClosedAutoReopen() {
+          if (!this.settings.orderClosed || !this.settings.orderClosedAt) {
+            return;
+          }
+
+          const now = new Date();
+          const closedAt = new Date(this.settings.orderClosedAt);
+          if (Number.isNaN(closedAt.getTime())) {
+            return;
+          }
+
+          const resetTime = this.settings.orderResetTime || '14:00';
+          const [resetHour, resetMinute] = resetTime.split(':').map(v => Number(v));
+          if (Number.isNaN(resetHour) || Number.isNaN(resetMinute)) {
+            return;
+          }
+
+          const todayAtReset = new Date(now);
+          todayAtReset.setHours(resetHour, resetMinute, 0, 0);
+
+          if (now >= todayAtReset) {
+            const closedAtTodayAtReset = new Date(closedAt);
+            closedAtTodayAtReset.setHours(resetHour, resetMinute, 0, 0);
+
+            if (closedAt < closedAtTodayAtReset) {
+              this.settings.orderClosed = false;
+              this.settings.orderClosedAt = null;
+              this.queueSettingsSave();
+            }
+          }
+        },
+
+        scheduleOrderClosedCheck() {
+          if (this.orderClosedCheckTimer) {
+            clearTimeout(this.orderClosedCheckTimer);
+          }
+          const now = new Date();
+          const resetTime = this.settings.orderResetTime || '14:00';
+          const [resetHour, resetMinute] = resetTime.split(':').map(v => Number(v));
+          const nextCheck = new Date(now);
+          if (!Number.isNaN(resetHour) && !Number.isNaN(resetMinute)) {
+            nextCheck.setHours(resetHour, resetMinute, 0, 0);
+          } else {
+            nextCheck.setHours(14, 0, 0, 0);
+          }
+          if (nextCheck <= now) {
+            nextCheck.setDate(nextCheck.getDate() + 1);
+          }
+          const delay = nextCheck.getTime() - now.getTime();
+          this.orderClosedCheckTimer = setTimeout(() => {
+            this.checkOrderClosedAutoReopen();
+            this.scheduleOrderClosedCheck();
+          }, delay);
         },
 
         importDeliveryAddressToClient() {
@@ -1247,6 +1345,8 @@
         getTotalBentoCount() { return this.orders.reduce((sum, ord) => sum + ord.items.reduce((inner, item) => inner + (item.count || 1), 0), 0); },
         getTotalTablewareCount() { return this.orders.reduce((sum, ord) => sum + (ord.needTableware ? ord.items.reduce((inner, item) => inner + (item.count || 1), 0) : 0), 0); },
         getTotalReceiptCount() { return this.orders.reduce((sum, ord) => sum + (ord.needReceipt ? 1 : 0), 0); },
+        getTotalRevenue() { return this.orders.reduce((sum, ord) => sum + (Number(ord.totalAmount) || 0), 0); },
+        formatCurrency(amount) { return `NT$ ${amount.toLocaleString('zh-TW')}`; },
         getPriceRuleLabel(dish) {
           if (!dish || dish.priceType === 'all') return '無預算限制';
           if (dish.priceType === 'range' && dish.specificPrice) return `NT$ ${dish.specificPrice} 以上可用`;
