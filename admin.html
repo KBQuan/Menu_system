@@ -1131,7 +1131,10 @@
           setInterval(async () => {
             const prevIds = new Set(this.orders.map(o => o.id));
             await this.loadDataFromStorage();
-            await this.loadSettings();
+            // 若正在排隊存檔（使用者剛調整設定），跳過本次設定同步避免覆蓋本地操作
+            if (!this.settingsSaveTimer) {
+              await this.loadSettings();
+            }
             const newIds = new Set(this.orders.map(o => o.id));
 
             const added = [...newIds].filter(id => !prevIds.has(id));
@@ -1255,8 +1258,9 @@
           if (this.isLoadingSettings) return;
           clearTimeout(this.settingsSaveTimer);
           this.settingsSaveTimer = setTimeout(async () => {
+            this.settingsSaveTimer = null;
             await VegeBentoDB.saveAdminSettings(this.settings);
-          }, 350);
+          }, 500);
         },
 
         onOrderClosedChange() {
