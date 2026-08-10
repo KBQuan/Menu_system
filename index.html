@@ -389,7 +389,7 @@
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">預定日期<span
                 class="text-rose-500">*</span></label>
             <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-100 text-xs pointer-events-none">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">
                 <i class="fa-solid fa-calendar-days"></i>
               </span>
               <template x-if="visiblePlannedMenus().length > 0">
@@ -397,7 +397,7 @@
                   class="w-full glass-input rounded-xl pl-8 pr-10 py-3 text-sm font-medium text-amber-900 focus:outline-none appearance-none cursor-pointer">
                   <template x-for="plan in visiblePlannedMenus()" :key="plan.date">
                     <option :value="plan.date"
-                      x-text="plan.date.slice(5).replace('-','/') + ' (' + ['日','一','二','三','四','五','六'][new Date(plan.date).getDay()] + ')' ">
+                      x-text="plan.date.slice(5).replace('-','/') + ' (' + ['日','一','二','三','四','五','六'][new Date(plan.date + 'T00:00:00').getDay()] + ')' ">
                     </option>
                   </template>
                 </select>
@@ -407,7 +407,7 @@
                   class="w-full glass-input rounded-xl pl-8 pr-10 py-3 text-sm font-medium text-amber-900 focus:outline-none appearance-none cursor-pointer">
                   <template x-for="d in availableNextBusinessDates()" :key="d">
                     <option :value="d"
-                      x-text="d.slice(5).replace('-','/') + ' (' + ['日','一','二','三','四','五','六'][new Date(d).getDay()] + ')' ">
+                      x-text="d.slice(5).replace('-','/') + ' (' + ['日','一','二','三','四','五','六'][new Date(d + 'T00:00:00').getDay()] + ')' ">
                     </option>
                   </template>
                 </select>
@@ -1476,7 +1476,7 @@
             if (!this.isDishCompatibleWithVegType(dish, bentoTarget.vegType)) return false;
 
             // 檢查該日期是否有單獨覆寫價格
-            const overridePriceStr = plan && plan.priceOverrides ? plan.priceOverrides[dish.id] : null;
+            const overridePriceStr = plan && plan.priceOverrides ? (plan.priceOverrides[dish.id] || plan.priceOverrides[String(dish.id)]) : null;
             if (overridePriceStr) {
               const overridePrice = parseInt(overridePriceStr);
               return targetPrice >= overridePrice;
@@ -1780,9 +1780,15 @@
         getOrderDisplayItems(order) {
           const itemMap = new Map();
           (order.items || []).forEach(item => {
+            let resolvedMainDish = item.mainDish;
+            if ((!resolvedMainDish || resolvedMainDish === '未指定') && item.mainDishId) {
+              const d = this.mainDishes.find(x => String(x.id) === String(item.mainDishId));
+              if (d) resolvedMainDish = d.name;
+            }
             const key = JSON.stringify({
               name: item.name,
-              mainDish: item.mainDish,
+              mainDishId: item.mainDishId || null,
+              mainDish: resolvedMainDish,
               rice: item.rice,
               riceType: item.riceType,
               price: item.price,
@@ -1792,6 +1798,7 @@
             if (!itemMap.has(key)) {
               itemMap.set(key, {
                 ...item,
+                mainDish: resolvedMainDish,
                 count: item.count || 1
               });
             } else {
@@ -1862,13 +1869,14 @@
               const priceVal = this.clientForm.singleBento.price === 'other' ? this.clientForm.singleBento.otherPrice : this.clientForm.singleBento.price;
               let disStr = this.clientForm.singleBento.dislikes.join(',') + (this.clientForm.singleBento.otherDislike ? ' ' + this.clientForm.singleBento.otherDislike : '');
               const quantity = parseInt(this.clientForm.singleBento.quantity || 1);
-              for (let i = 0; i < quantity; i++) items.push({
+                for (let i = 0; i < quantity; i++) items.push({
                 name: '統一餐盒',
                 vegType: this.clientForm.singleBento.vegType,
                 price: parseInt(priceVal || 0),
                 riceType: this.clientForm.singleBento.riceType,
                 rice: this.clientForm.singleBento.rice,
-                mainDish: this.clientForm.singleBento.mainDish || '未指定',
+                  mainDish: this.clientForm.singleBento.mainDish || '未指定',
+                  mainDishId: (this.mainDishes.find(d => d.name === this.clientForm.singleBento.mainDish) || {}).id || null,
                 dislikes: [...this.clientForm.singleBento.dislikes],
                 otherDislike: this.clientForm.singleBento.otherDislike,
                 summary: `[統一單] ${this.clientForm.singleBento.vegType} | NT$${priceVal} | 主菜: ${this.clientForm.singleBento.mainDish} | 飯別: ${this.clientForm.singleBento.riceType} | 飯量: ${this.clientForm.singleBento.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
@@ -1889,6 +1897,7 @@
                   riceType: row.riceType,
                   rice: row.rice,
                   mainDish: row.mainDish || '未指定',
+                  mainDishId: (this.mainDishes.find(d => d.name === row.mainDish) || {}).id || null,
                   dislikes: [...row.dislikes],
                   otherDislike: row.otherDislike,
                   summary: `[${row.name}] ${row.vegType} | NT$${priceVal} | 主菜: ${row.mainDish} | 飯別: ${row.riceType} | 飯量: ${row.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,

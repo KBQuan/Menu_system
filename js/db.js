@@ -113,7 +113,8 @@ const VegeBentoDB = {
             vegType: dish.veg_type || '全素',
             priceType: dish.price_type || 'all',
             specificPrice: dish.specific_price || '',
-            available: dish.available !== undefined ? dish.available : true
+            available: dish.available !== undefined ? dish.available : true,
+            scheduledDates: Array.isArray(dish.scheduled_dates) ? dish.scheduled_dates : (dish.scheduled_dates ? [dish.scheduled_dates] : [])
           }));
         }
         console.error('Supabase getDishes error:', error);
@@ -128,15 +129,20 @@ const VegeBentoDB = {
   },
 
   async saveDish(dish) {
+    const scheduledDates = Array.isArray(dish.scheduledDates) 
+      ? dish.scheduledDates 
+      : (dish.scheduled_dates ? dish.scheduled_dates : []);
+
     if (isSupabaseActive) {
       try {
         const payload = {
-          id: dish.id,
+          id: Number(dish.id) || dish.id,
           name: dish.name,
-          veg_type: dish.vegType,
-          price_type: dish.priceType,
+          veg_type: dish.vegType || '全素',
+          price_type: dish.priceType || 'all',
           specific_price: String(dish.specificPrice || ''),
-          available: dish.available
+          available: dish.available !== undefined ? dish.available : true,
+          scheduled_dates: scheduledDates
         };
         const { error } = await supabaseClient
           .from('vege_bento_main_dishes')
@@ -149,11 +155,16 @@ const VegeBentoDB = {
     
     // 更新 LocalStorage 模式以作同步備份
     const dishes = await this.getDishes();
-    const index = dishes.findIndex(d => d.id === dish.id);
+    const index = dishes.findIndex(d => String(d.id) === String(dish.id));
+    const normalizedDish = {
+      ...dish,
+      id: Number(dish.id) || dish.id,
+      scheduledDates: scheduledDates
+    };
     if (index > -1) {
-      dishes[index] = dish;
+      dishes[index] = normalizedDish;
     } else {
-      dishes.push(dish);
+      dishes.push(normalizedDish);
     }
     localStorage.setItem('vege_bento_main_dishes', JSON.stringify(dishes));
   },
@@ -423,20 +434,83 @@ const VegeBentoDB = {
   },
 
   async savePlannedMenus(plans) {
-    // plans: [{ date: 'YYYY-MM-DD', dishIds: [id,...] }, ...]
+    // plans: [{ date: 'YYYY-MM-DD', dishIds: [id,...], priceOverrides: {} }, ...]
     localStorage.setItem('vege_bento_planned_menus', JSON.stringify(plans));
     if (isSupabaseActive) {
       try {
-        // simplistic strategy: delete all and insert provided
+        // 清空既有排程並寫入最新排程資料
         await supabaseClient.from('vege_bento_planned_menus').delete().neq('date', '');
         if (plans.length > 0) {
-          const payload = plans.map(p => ({ date: p.date, dish_ids: p.dishIds, price_overrides: p.priceOverrides || {} }));
-          const { error } = await supabaseClient.from('vege_bento_planned_menus').insert(payload);
-          if (error) console.error('Supabase savePlannedMenus insert error:', error);
+          const payload = plans.map(p => ({
+            date: p.date,
+            dish_ids: (p.dishIds || []).map(id => Number(id) || id),
+            price_overrides: p.priceOverrides || {}
+          }));
+          const { data: insertData, error: insertError } = await supabaseClient
+            .from('vege_bento_planned_menus')
+            .upsert(payload);
+          if (insertError) console.error('Supabase savePlannedMenus insert error:', insertError);
+          else console.log('Supabase savePlannedMenus inserted:', insertData);
+        }
+
+        // 同步更新主菜 (vege_bento_main_dishes) 的 scheduled_dates 陣列
+        try {
+          const dishes = await this.getDishes();
+          const dishDateMap = new Map();
+          (plans || []).forEach(p => {
+            (p.dishIds || []).forEach(id => {
+              const strId = String(id);
+              if (!dishDateMap.has(strId)) dishDateMap.set(strId, []);
+              dishDateMap.get(strId).push(p.date);
+            });
+          });
+
+          for (const dish of dishes) {
+            const dates = dishDateMap.get(String(dish.id)) || [];
+            // 使用 update (PATCH) 避免 upsert 遺漏 name 報錯 (23502 not-null constraint)
+            const { error: updateErr } = await supabaseClient
+              .from('vege_bento_main_dishes')
+              .update({ scheduled_dates: dates })
+              .eq('id', dish.id);
+            if (updateErr) console.error('Supabase update scheduled_dates error for dish', dish.id, updateErr);
+            else console.log('Supabase updated scheduled_dates for dish', dish.id, dates);
+
+            dish.scheduledDates = dates;
+          }
+
+          localStorage.setItem('vege_bento_main_dishes', JSON.stringify(dishes));
+        } catch (err) {
+          console.error('Failed to update main dishes scheduled_dates:', err);
         }
       } catch (err) {
         console.error('Supabase savePlannedMenus exception:', err);
       }
+    }
+
+    // 本地備份同步
+    try {
+      const stored = localStorage.getItem('vege_bento_main_dishes');
+      const dishes = stored ? JSON.parse(stored) : [];
+      const dateMap = {};
+      (plans || []).forEach(p => {
+        (p.dishIds || []).forEach(id => {
+          const strId = String(id);
+          dateMap[strId] = dateMap[strId] || [];
+          dateMap[strId].push(p.date);
+        });
+      });
+      let changed = false;
+      for (const d of dishes) {
+        const strId = String(d.id);
+        const newDates = dateMap[strId] || [];
+        if (JSON.stringify(d.scheduledDates || []) !== JSON.stringify(newDates)) {
+          d.scheduledDates = newDates;
+          changed = true;
+        }
+      }
+      if (changed) localStorage.setItem('vege_bento_main_dishes', JSON.stringify(dishes));
+    } catch (err) {
+      console.error('Failed to mirror scheduled_dates to local dishes:', err);
     }
   },
 
