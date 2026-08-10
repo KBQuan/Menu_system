@@ -24,6 +24,61 @@ function initSupabase() {
 initSupabase();
 
 const VegeBentoDB = {
+  localDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  firstSelectableDate(now = new Date()) {
+    const cutoff = new Date(now);
+    cutoff.setHours(13, 30, 0, 0);
+    const date = new Date(now);
+    if (now >= cutoff) {
+      date.setDate(date.getDate() + 1);
+    }
+    return this.localDateString(date);
+  },
+
+  nextBusinessDates(count = 6, startDate = this.firstSelectableDate()) {
+    const dates = [];
+    const date = new Date(`${startDate}T00:00:00`);
+    while (dates.length < count) {
+      const day = date.getDay();
+      if (day !== 0 && day !== 6) {
+        dates.push(this.localDateString(date));
+      }
+      date.setDate(date.getDate() + 1);
+    }
+    return dates;
+  },
+
+  refreshPlannedMenusWindow(plans, count = 6) {
+    const source = Array.isArray(plans) ? plans : [];
+    const firstDate = this.firstSelectableDate();
+    const byDate = new Map();
+
+    source.forEach(plan => {
+      if (!plan || !plan.date || plan.date < firstDate) return;
+      byDate.set(plan.date, {
+        date: plan.date,
+        dishIds: Array.isArray(plan.dishIds) ? plan.dishIds : [],
+        priceOverrides: plan.priceOverrides || {}
+      });
+    });
+
+    this.nextBusinessDates(count, firstDate).forEach(date => {
+      if (!byDate.has(date)) {
+        byDate.set(date, { date, dishIds: [], priceOverrides: {} });
+      }
+    });
+
+    const refreshed = Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+    const changed = JSON.stringify(source) !== JSON.stringify(refreshed);
+    return { plans: refreshed, changed };
+  },
+
   getLocalOrders() {
     const stored = localStorage.getItem('vege_bento_orders');
     return stored ? JSON.parse(stored) : [];
@@ -338,6 +393,7 @@ const VegeBentoDB = {
 
   // === 6. 管理員每日排程主菜 (Planned Menus by Date) ===
   async getPlannedMenus() {
+    let plans = [];
     if (isSupabaseActive) {
       try {
         const { data, error } = await supabaseClient
@@ -345,8 +401,12 @@ const VegeBentoDB = {
           .select('*')
           .order('date', { ascending: true });
         if (!error && data) {
-          // normalize to front-end shape
-          return (data || []).map(row => ({ date: row.date, dishIds: row.dish_ids || [], priceOverrides: row.price_overrides || {} }));
+          plans = (data || []).map(row => ({ date: row.date, dishIds: row.dish_ids || [], priceOverrides: row.price_overrides || {} }));
+          const refreshed = this.refreshPlannedMenusWindow(plans);
+          if (refreshed.changed) {
+            await this.savePlannedMenus(refreshed.plans);
+          }
+          return refreshed.plans;
         }
         console.error('Supabase getPlannedMenus error:', error);
       } catch (err) {
@@ -354,7 +414,12 @@ const VegeBentoDB = {
       }
     }
     const stored = localStorage.getItem('vege_bento_planned_menus');
-    return stored ? JSON.parse(stored) : [];
+    plans = stored ? JSON.parse(stored) : [];
+    const refreshed = this.refreshPlannedMenusWindow(plans);
+    if (refreshed.changed) {
+      localStorage.setItem('vege_bento_planned_menus', JSON.stringify(refreshed.plans));
+    }
+    return refreshed.plans;
   },
 
   async savePlannedMenus(plans) {

@@ -47,8 +47,7 @@
   </style>
 </head>
 
-<body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-cover bg-center bg-fixed"
-  style="background-image: url('background.jpg');" x-data="bentoAdminApp()"
+<body class="text-slate-800 font-sans min-h-screen flex flex-col relative" x-data="bentoAdminApp()"
   x-init="init(); $watch('settings.adminFontSize', v => { document.documentElement.style.fontSize = v + 'px'; queueSettingsSave(); }); $watch('settings.clientFontSize', () => queueSettingsSave());">
   <header class="border-b border-white/20 bg-white/55 backdrop-blur-md shadow-sm sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1092,6 +1091,9 @@
         allOrdersLargeView: false,
         settingsSaveTimer: null,
         isLoadingSettings: false,
+        notificationAudioCtx: null,
+        isNotificationAudioUnlocked: false,
+        notificationAudioUnlockHandler: null,
 
         editingDish: { id: null, name: '', priceType: 'all', specificPrice: '', vegType: '全素', available: true },
         confirmModal: { show: false, title: '', message: '', actionType: '', targetId: null, targetIds: [] },
@@ -1117,6 +1119,7 @@
           }
           await this.loadDataFromStorage();
           await this.loadSettings();
+          this.setupNotificationAudioUnlock();
           // 初始化後台根字級
           document.documentElement.style.fontSize = this.settings.adminFontSize + 'px';
           window.addEventListener('storage', async (e) => {
@@ -1351,13 +1354,57 @@
           this.confirmModal.show = true;
         },
 
-        playNotificationSound() {
+        getNotificationAudioContext() {
           try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            const ctx = new AudioContext();
+            if (!AudioContext) return null;
+            if (!this.notificationAudioCtx) {
+              this.notificationAudioCtx = new AudioContext();
+            }
+            return this.notificationAudioCtx;
+          } catch (e) {
+            console.error('Create notification audio context failed:', e);
+            return null;
+          }
+        },
+
+        setupNotificationAudioUnlock() {
+          if (this.notificationAudioUnlockHandler) return;
+
+          this.notificationAudioUnlockHandler = () => {
+            const ctx = this.getNotificationAudioContext();
+            if (!ctx) return;
+
             if (ctx.state === 'suspended') {
               ctx.resume();
+            }
+
+            const silent = ctx.createBufferSource();
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.001, ctx.currentTime);
+            silent.buffer = ctx.createBuffer(1, 1, 22050);
+            silent.connect(gain);
+            gain.connect(ctx.destination);
+            silent.start(0);
+            this.isNotificationAudioUnlocked = true;
+
+            window.removeEventListener('pointerdown', this.notificationAudioUnlockHandler);
+            window.removeEventListener('touchstart', this.notificationAudioUnlockHandler);
+            window.removeEventListener('click', this.notificationAudioUnlockHandler);
+          };
+
+          window.addEventListener('pointerdown', this.notificationAudioUnlockHandler, { once: true, passive: true });
+          window.addEventListener('touchstart', this.notificationAudioUnlockHandler, { once: true, passive: true });
+          window.addEventListener('click', this.notificationAudioUnlockHandler, { once: true, passive: true });
+        },
+
+        playNotificationSound() {
+          try {
+            const ctx = this.getNotificationAudioContext();
+            if (!ctx) return;
+            if (ctx.state === 'suspended') {
+              ctx.resume();
+              if (!this.isNotificationAudioUnlocked) return;
             }
 
             // 第一聲：高音叮 (C5)

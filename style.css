@@ -12,6 +12,18 @@ body {
   min-height: 100vh;
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image: url('background.jpg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  pointer-events: none;
+}
+
 /* 淺色微光液態粒子塊 */
 .liquid-mesh {
   position: fixed;

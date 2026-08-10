@@ -205,8 +205,7 @@
   </style>
 </head>
 
-<body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-center bg-fixed"
-  style="background-image: url('background.jpg'); background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"
+<body class="text-slate-800 font-sans min-h-screen flex flex-col relative"
   x-data="bentoApp()"
   x-init="init(); $watch('fontSizeLevel', v => { document.documentElement.style.fontSize = v === 0 ? '14px' : v === 2 ? '18px' : '16px'; })">
   <div class="liquid-mesh"></div>
@@ -393,17 +392,17 @@
               <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-100 text-xs pointer-events-none">
                 <i class="fa-solid fa-calendar-days"></i>
               </span>
-              <template x-if="plannedMenus && plannedMenus.length > 0">
+              <template x-if="visiblePlannedMenus().length > 0">
                 <select x-model="clientForm.scheduledDate" @change="autoSelectFirstAvailableDish()"
                   class="w-full glass-input rounded-xl pl-8 pr-10 py-3 text-sm font-medium text-amber-900 focus:outline-none appearance-none cursor-pointer">
-                  <template x-for="plan in plannedMenus" :key="plan.date">
+                  <template x-for="plan in visiblePlannedMenus()" :key="plan.date">
                     <option :value="plan.date"
                       x-text="plan.date.slice(5).replace('-','/') + ' (' + ['日','一','二','三','四','五','六'][new Date(plan.date).getDay()] + ')' ">
                     </option>
                   </template>
                 </select>
               </template>
-              <template x-if="!plannedMenus || plannedMenus.length === 0">
+              <template x-if="visiblePlannedMenus().length === 0">
                 <select x-model="clientForm.scheduledDate" @change="autoSelectFirstAvailableDish()"
                   class="w-full glass-input rounded-xl pl-8 pr-10 py-3 text-sm font-medium text-amber-900 focus:outline-none appearance-none cursor-pointer">
                   <template x-for="d in availableNextBusinessDates()" :key="d">
@@ -417,7 +416,7 @@
                 <i class="fa-solid fa-chevron-down"></i>
               </span>
             </div>
-            <template x-if="!plannedMenus || plannedMenus.length === 0">
+            <template x-if="visiblePlannedMenus().length === 0">
               <p class="text-xs text-slate-400 mt-1">顯示今日及未來 5 個工作天（不含週六、週日）。</p>
             </template>
           </div>
@@ -531,7 +530,7 @@
                 <option :value="dish.name" x-text="dish.name + ' · ' + dish.vegType"></option>
               </template>
             </select>
-            <template x-if="plannedMenus && plannedMenus.length > 0">
+            <template x-if="visiblePlannedMenus().length > 0">
               <div class="text-xs mt-2 text-slate-500">
                 <template x-if="plannedDishNamesForSelectedDate().length > 0">
                   當日可選主菜：<span class="font-medium text-slate-700"
@@ -695,7 +694,7 @@
                       <option :value="dish.name" x-text="dish.name + ' · ' + dish.vegType"></option>
                     </template>
                   </select>
-                  <template x-if="plannedMenus && plannedMenus.length > 0 && clientForm.scheduledDate">
+                  <template x-if="visiblePlannedMenus().length > 0 && clientForm.scheduledDate">
                     <div class="text-[10px] mt-1 text-slate-500">
                       <template x-if="plannedDishNamesForSelectedDate().length > 0">
                         當日可選主菜：<span class="font-medium text-slate-700"
@@ -1205,7 +1204,7 @@
           needTableware: false,
           needReceipt: false,
           deliveryAddress: '',
-          scheduledDate: new Date().toISOString().slice(0, 10),
+          scheduledDate: '',
           isCustomized: false,
           deliveryTimeType: 'ASAP',
           deliveryTimeValue: '12:00',
@@ -1222,11 +1221,13 @@
             this.fontSizeLevel === 0 ? '14px' : this.fontSizeLevel === 2 ? '18px' : '16px';
           await this.loadDataFromStorage();
           await this.applyClientAdminSettings();
+          this.refreshScheduledDateSelection();
           this.autoSelectFirstAvailableDish();
 
           // 定時 5 秒同步一次雲端控制設定（例如：關閉點餐、文字大小、預設地址）
           setInterval(() => {
             this.applyClientAdminSettings();
+            this.refreshScheduledDateSelection();
           }, 5000);
 
           // 監聽預定日期變動，自動切換對應可選主菜
@@ -1331,15 +1332,15 @@
           // 載入管理員排定的每日主菜 (供前端買家選擇預定日期)
           const plans = await VegeBentoDB.getPlannedMenus();
           this.plannedMenus = Array.isArray(plans) ? plans : [];
-          const todayStr = new Date().toISOString().slice(0, 10);
+          const todayStr = this.firstSelectableDate();
           if (this.plannedMenus.length > 0) {
             // 優先選今天；若今天不在排程中，選最近的排程日期
             if (this.plannedMenus.some(p => p.date === todayStr)) {
               this.clientForm.scheduledDate = todayStr;
             } else {
               // 找最近且 >= 今天的日期
-              const future = this.plannedMenus.filter(p => p.date >= todayStr);
-              this.clientForm.scheduledDate = future.length > 0 ? future[0].date : this.plannedMenus[0].date;
+              const future = this.visiblePlannedMenus().filter(p => p.date >= todayStr);
+              this.clientForm.scheduledDate = future.length > 0 ? future[0].date : this.visiblePlannedMenus()[0]?.date || todayStr;
             }
           } else {
             // 無排程時直接預設今天
@@ -1407,6 +1408,41 @@
 
 
         // 回傳管理員在所選日期所排定的主菜 ID 清單
+        localDateString(date = new Date()) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        },
+
+        isPastTodayOrderCutoff(now = new Date()) {
+          const cutoff = new Date(now);
+          cutoff.setHours(13, 30, 0, 0);
+          return now >= cutoff;
+        },
+
+        firstSelectableDate(now = new Date()) {
+          const date = new Date(now);
+          if (this.isPastTodayOrderCutoff(now)) {
+            date.setDate(date.getDate() + 1);
+          }
+          return this.localDateString(date);
+        },
+
+        visiblePlannedMenus() {
+          const firstDate = this.firstSelectableDate();
+          return (this.plannedMenus || []).filter(plan => plan.date >= firstDate);
+        },
+
+        refreshScheduledDateSelection() {
+          const planned = this.visiblePlannedMenus();
+          const dates = planned.length > 0 ? planned.map(plan => plan.date) : this.availableNextBusinessDates();
+          if (!dates.includes(this.clientForm.scheduledDate)) {
+            this.clientForm.scheduledDate = dates[0] || this.firstSelectableDate();
+            this.autoSelectFirstAvailableDish();
+          }
+        },
+
         plannedDishIdsForDate(date) {
           if (!date || !this.plannedMenus || !Array.isArray(this.plannedMenus)) return [];
           const plan = this.plannedMenus.find(p => p.date === date);
@@ -1417,7 +1453,7 @@
         // 回傳從今天起（包含今天）往後的 n 個非週末日期（預設包含今天 + 5 個後續工作日）
         availableNextBusinessDates(n = 6) {
           const res = [];
-          const d = new Date();
+          const d = new Date(`${this.firstSelectableDate()}T00:00:00`);
           // 使用本地時區，從今天開始
           while (res.length < n) {
             const day = d.getDay();
@@ -1451,7 +1487,7 @@
             return false;
           });
           // 選擇日期時，只顯示該日期所提供的主菜
-          if (this.plannedMenus && this.plannedMenus.length > 0 && selDate) {
+          if (this.visiblePlannedMenus().length > 0 && selDate) {
             const plannedIds = this.plannedDishIdsForDate(selDate);
             const plannedSet = new Set(plannedIds);
             list = list.filter(d => plannedSet.has(String(d.id)));
@@ -1772,6 +1808,7 @@
             return;
           }
           this.isSubmitting = true;
+          this.refreshScheduledDateSelection();
           if (this.orderClosed) {
             this.showToast('目前已截止訂單，暫時無法送出。', 'danger');
             this.isSubmitting = false;
@@ -1783,8 +1820,8 @@
               return;
             }
             // 若管理員已有排程，強制買家選擇排定日期
-            if (this.plannedMenus && this.plannedMenus.length > 0) {
-              const ok = this.plannedMenus.some(p => p.date === this.clientForm.scheduledDate);
+            if (this.visiblePlannedMenus().length > 0) {
+              const ok = this.visiblePlannedMenus().some(p => p.date === this.clientForm.scheduledDate);
               if (!ok) {
                 this.showToast('請選擇管理員已排定的出餐日期再送出訂單。', 'danger');
                 this.isSubmitting = false;
@@ -1899,7 +1936,7 @@
             // 表單初始化重置
             this.clientForm.unit = '';
             this.clientForm.deliveryAddress = '';
-            this.clientForm.scheduledDate = new Date().toISOString().slice(0, 10);
+            this.refreshScheduledDateSelection();
             this.clientForm.globalNote = '';
             this.clientForm.singleBento.quantity = 1;
             this.clientForm.customBentos = [{ name: '同仁 1', price: '80', otherPrice: '', vegType: '全素', riceType: '', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' }];
