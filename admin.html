@@ -247,23 +247,41 @@
                 class="text-xs text-amber-400/60 italic text-center py-2">目前尚無訂單資料</div>
             </div>
           </div>
+
+          <!-- 移除：預約訂單面板已移至顧客點餐板下方 -->
         </div>
 
         <div class="lg:col-span-8 space-y-4">
-          <div class="flex justify-between items-center">
-            <h3 class="text-base font-black text-white flex items-center space-x-1.5">
-              
-              <span class="inline-flex items-center px-3 py-1 rounded-full border border-brand-600 bg-amber-900/10 text-brand-600">
-                <i class="fa-solid fa-list-check text-brand-600"></i>
-                <p>&nbsp;</p>
-                顧客點餐板
-
+          <div class="flex justify-between items-center flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span
+                class="inline-flex items-center px-3 py-1 rounded-xl border border-brand-300/80 bg-amber-900/10 text-brand-700 font-black text-xs shadow-sm">
+                <i class="fa-solid fa-list-check text-brand-600 mr-1.5"></i>顧客點餐板
               </span>
-            </h3>
-            <button x-show="orders.length > 0" @click="triggerClearAllOrders()"
-              class="text-xs text-red-300 hover:text-red-700 font-bold flex items-center space-x-1">
-              <i class="fa-regular fa-trash-can"></i><span>清除今日訂單</span>
-            </button>
+              <div class="relative inline-flex items-center">
+                <select x-model="boardDateFilter"
+                  class="text-xs font-bold rounded-xl border border-amber-300/80 bg-amber-50/90 text-amber-800 hover:bg-amber-100 hover:text-amber-900 transition-all px-3 py-1 pr-7 shadow-sm cursor-pointer focus:outline-none appearance-none">
+                  <option value="all">全部預定日期</option>
+                  <template x-for="opt in boardDateFilterOptions" :key="opt.value">
+                    <option :value="opt.value" x-text="opt.label"></option>
+                  </template>
+                </select>
+                <i
+                  class="fa-solid fa-chevron-down text-[10px] text-amber-600 absolute right-2.5 pointer-events-none"></i>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button x-show="orders.some(o => o.status === '已接單')" @click="triggerDeliverAllAcceptedOrders()"
+                class="text-xs font-bold rounded-xl border border-emerald-300/80 bg-emerald-50/90 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 transition-all flex items-center space-x-1.5 px-3 py-1 shadow-sm cursor-pointer"
+                title="將所有【已接單】的訂單全部標記為已送出">
+                <i class="fa-solid fa-circle-check text-emerald-600"></i><span>全部送出</span>
+              </button>
+              <button x-show="orders.length > 0" @click="triggerClearAllOrders()"
+                class="text-xs font-bold rounded-xl border border-red-200/80 bg-red-50/90 text-red-600 hover:bg-red-100 hover:text-red-700 hover:border-red-300 transition-all flex items-center space-x-1.5 px-3 py-1 shadow-sm cursor-pointer"
+                title="重置並清除今日的所有訂單紀錄（需二次確認）">
+                <i class="fa-regular fa-trash-can text-red-500"></i><span>清除今日訂單</span>
+              </button>
+            </div>
           </div>
 
           <div class="space-y-4">
@@ -271,17 +289,31 @@
             <template x-for="order in displayOrders" :key="order.id">
               <div class="glass-panel rounded-3xl overflow-hidden shadow-sm transition-all duration-300"
                 :class="order.status === '\u672a\u63a5\u55ae' ? 'order-pending-alert' : 'border border-white/50'">
-                <div class="p-4 bg-white/40 border-b border-white/40 flex flex-wrap justify-between items-center gap-2">
-                  <div class="flex items-center space-x-2">
-                    <span class="text-xs bg-brand-600 text-white font-black px-2 py-0.5 rounded-md"
+                <div
+                  class="px-3 py-2 bg-white/40 border-b border-white/40 flex flex-wrap justify-between items-center gap-1.5">
+                  <div class="flex items-center space-x-1.5">
+                    <span class="text-[10px] bg-brand-600 text-white font-black px-1.5 py-0.5 rounded-md"
                       x-text="order.id"></span>
-                    <h4 class="text-sm font-black text-slate-800" x-text="order.unit"></h4>
-                    <div class="space-y-1 text-xs text-slate-500">
+                    <h4 class="text-xs font-black text-slate-800" x-text="order.unit"></h4>
+                    <div class="text-[11px] text-slate-500">
                       <div x-text="'電話: ' + (order.userPhone || '未提供')"></div>
                     </div>
                   </div>
                   <div class="flex items-center space-x-3">
-                    <span class="text-[11px] text-slate-600 font-bold" x-text="'下單: ' + order.timestamp"></span>
+                    <div class="flex flex-col items-end sm:flex-row sm:items-center gap-1.5 text-[11px]">
+                      <span
+                        class="bg-amber-600/10 text-amber-900 border border-amber-300/50 px-2 py-0.5 rounded-md font-black flex items-center gap-1">
+                        <i class="fa-solid fa-calendar-day text-[10px] text-amber-700"></i>
+                        <span>預定:</span>
+                        <span
+                          x-text="order.scheduledDate ? (order.scheduledDate.slice(5).replace('-', '/') + ' (' + ['日','一','二','三','四','五','六'][new Date(order.scheduledDate).getDay()] + ')') : '今日'"></span>
+                      </span>
+                      <span class="text-slate-600 font-medium">
+                        <span>下單:</span>
+                        <span
+                          x-text="(order.createdAt ? order.createdAt.slice(0, 10).replace(/-/g, '/') + ' ' : '') + (order.timestamp || '')"></span>
+                      </span>
+                    </div>
                     <select x-model="order.status"
                       @change="order.grouped ? updateGroupedOrderStatus(order) : updateOrderStatus(order)"
                       :class="{ 'bg-red-500/20 text-red-900 border-red-500/20': order.status === '未接單', 'bg-yellow-500/20 text-yellow-900 border-yellow-500/20': order.status === '已接單', 'bg-blue-500/20 text-blue-900 border-blue-500/20': order.status === '製作中', 'bg-green-500/20 text-green-900 border-green-500/20': order.status === '已送出' }"
@@ -302,35 +334,48 @@
                 </div>
 
                 <div
-                  class="px-4 py-2.5 bg-brand-50/40 border-b border-white/20 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                  <div class="flex items-center space-x-1.5 text-brand-800 font-bold">
-                    <i class="fa-regular fa-clock text-brand-600"></i>
-                    <span>指定送達時間：</span>
-                    <span class="bg-white/80 px-2 py-0.5 rounded border border-brand-200"
+                  class="px-3 py-1.5 bg-brand-50/40 border-b border-white/20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5 text-[11px]">
+                  <div class="flex items-center space-x-1 text-amber-900 font-bold">
+                    <i class="fa-solid fa-calendar-check text-[10px] text-brand-600"></i>
+                    <span>預定：</span>
+                    <span
+                      class="bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-300/50 text-amber-900 font-black"
+                      x-text="order.scheduledDate ? (order.scheduledDate.replace(/-/g, '/') + ' (' + ['日','一','二','三','四','五','六'][new Date(order.scheduledDate).getDay()] + ')') : '今日'"></span>
+                  </div>
+                  <div class="flex items-center space-x-1 text-slate-700 font-medium">
+                    <i class="fa-solid fa-receipt text-[10px] text-brand-600"></i>
+                    <span>訂餐：</span>
+                    <span class="bg-white/80 px-1.5 py-0.5 rounded border border-slate-200 text-slate-900 font-bold"
+                      x-text="(order.createdAt ? order.createdAt.slice(0, 10).replace(/-/g, '/') + ' ' : '') + (order.timestamp || '')"></span>
+                  </div>
+                  <div class="flex items-center space-x-1 text-brand-800 font-bold">
+                    <i class="fa-regular fa-clock text-[10px] text-brand-600"></i>
+                    <span>送達：</span>
+                    <span class="bg-white/80 px-1.5 py-0.5 rounded border border-brand-200"
                       x-text="order.deliveryTime || '未註明'"></span>
                   </div>
-                  <div class="flex items-center space-x-1.5 text-slate-700 font-medium">
-                    <i class="fa-solid fa-location-dot text-brand-600"></i>
-                    <span>外送配送地址：</span>
+                  <div class="flex items-center space-x-1 text-slate-700 font-medium">
+                    <i class="fa-solid fa-location-dot text-[10px] text-brand-600"></i>
+                    <span>地址：</span>
                     <span class="text-slate-900 font-bold truncate" :title="order.deliveryAddress"
                       x-text="order.deliveryAddress || '未註明'"></span>
                   </div>
                 </div>
 
-                <div class="p-4 bg-white/20 text-xs space-y-3">
+                <div class="px-3 py-2.5 bg-white/20 text-[11px] space-y-2">
                   <div
-                    class="flex flex-wrap justify-between items-center gap-2 text-slate-700 border-b border-white/40 pb-2 font-bold">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="flex items-center space-x-1"><i class="fa-solid fa-utensils"></i><span
+                    class="flex flex-wrap justify-between items-center gap-1.5 text-slate-700 border-b border-white/40 pb-1.5 font-bold">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span class="flex items-center space-x-1"><i class="fa-solid fa-utensils text-[10px]"></i><span
                           x-text="order.needTableware ? '本訂單【需要】免洗餐具' : '本單【不需要】免洗餐具 (自備環保)'"></span></span>
                       <span class="flex items-center space-x-1 text-amber-800"><i
-                          class="fa-solid fa-file-invoice"></i><span
+                          class="fa-solid fa-file-invoice text-[10px]"></i><span
                           x-text="order.needReceipt ? '本訂單【需要】收據' : '本單【不需要】收據'"></span></span>
                     </div>
                     <span class="font-extrabold text-slate-900" x-text="'共 ' + order.totalBentoCount + ' 份素便當'"></span>
                   </div>
                   <div class="divide-y divide-white/20">
-                    <template x-for="(item, idx) in getOrderDisplayItems(order)playItems(order)">
+                    <template x-for="(item, idx) in getOrderDisplayItems(order)" :key="idx">
                       <div class="py-2.5 flex flex-wrap justify-between items-start gap-2">
                         <div class="space-y-0.5">
                           <span class="font-bold text-slate-900 text-xs" x-text="(idx+1) + '. ' + item.name"></span>
@@ -369,6 +414,8 @@
         </div>
       </div>
 
+      <!-- 已移除：顧客預定訂單面板（改由前台或其他視圖呈現） -->
+
       <div x-show="adminTab === 'dishes'" class="grid grid-cols-1 lg:grid-cols-12 gap-8" x-transition>
         <div class="lg:col-span-5">
           <div class="glass-panel rounded-3xl p-6 space-y-4">
@@ -376,6 +423,57 @@
               <i class="fa-solid fa-pen-to-square text-brand-500"></i>
               <span x-text="editingDish.id ? '編輯現有主菜項目' : '新增今日主菜上架'"></span>
             </h4>
+            <template x-if="!editingDish.id">
+              <div class="pt-3 border-t border-white/20"></div>
+              <div class="mt-4">
+                <h5 class="text-sm font-black text-slate-800">排程每日主菜</h5>
+                <p class="text-xs text-slate-500 mb-2">先設定主菜項目，再新增日期；新增日期後請於該日期設定當日供應之主菜。</p>
+                <div class="grid grid-cols-1 gap-3 mb-2">
+                  <div class="text-xs text-slate-500">顯示今日及後續 5 個工作天（不含週六、週日），可在每個日期下調整當日供應的主菜與覆寫價錢。</div>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+                    <template x-for="d in availableNextBusinessDates()" :key="d">
+                      <div class="p-3 rounded-xl bg-white/80 border border-slate-200">
+                        <div class="flex items-center justify-between mb-2">
+                          <div>
+                            <span
+                              class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-700/20 bg-white text-amber-700 font-black">
+                              <i class="fa-solid fa-calendar-days"></i>
+                              <span
+                                x-text="d.slice(5).replace('-', '/') + ' (' + ['日','一','二','三','四','五','六'][new Date(d).getDay()] + ')' "></span>
+                            </span>
+                          </div>
+                        </div>
+                        <div class="text-xs text-slate-700 grid grid-cols-1 gap-2">
+                          <template x-for="dish in mainDishes" :key="dish.id">
+                            <div
+                              class="flex items-center justify-between gap-2 p-1 rounded bg-white/50 border border-slate-100">
+                              <div class="flex items-center gap-2">
+                                <label class="inline-flex items-center gap-2">
+                                  <input type="checkbox"
+                                    :checked="(plannedMenus.find(p=>p.date===d) && plannedMenus.find(p=>p.date===d).dishIds.includes(dish.id))"
+                                    @change="toggleDishInPlanned(d, dish.id)">
+                                  <span class="text-xs font-medium" x-text="dish.name"></span>
+                                </label>
+                              </div>
+                              <div class="flex items-center gap-2">
+                                <input type="number" min="0" placeholder="覆寫價錢"
+                                  class="glass-input px-2 py-1 text-xs w-24"
+                                  :value="(plannedMenus.find(p=>p.date===d) && plannedMenus.find(p=>p.date===d).priceOverrides && plannedMenus.find(p=>p.date===d).priceOverrides[dish.id]) ? plannedMenus.find(p=>p.date===d).priceOverrides[dish.id] : ''"
+                                  @input="setPriceOverride(d, dish.id, $event.target.value)">
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                  <div class="mt-2 flex gap-2">
+                    <button @click="savePlannedMenus()"
+                      class="glass-btn text-slate-800 px-3 py-2 rounded-xl text-sm">儲存排程</button>
+                  </div>
+                </div>
+              </div>
+            </template>
             <p class="text-xs text-slate-500">此處新增的主菜會同步成為前台主菜項目，管理員可設定供應狀態與適用價格。</p>
             <div class="space-y-3 text-xs">
               <div>
@@ -436,8 +534,15 @@
                       <span class="text-[10px] text-slate-500 px-2 py-0.5 rounded-full border border-slate-200"
                         x-text="dish.vegType"></span>
                     </div>
-                    <span class="text-xs text-slate-600 block font-medium"
-                      x-text="'預算限制: ' + getPriceRuleLabel(dish)"></span>
+                    <div class="flex flex-wrap gap-2 items-center">
+                      <span class="text-xs text-slate-600 font-medium"
+                        x-text="'預算限制: ' + getPriceRuleLabel(dish)"></span>
+                      <template x-for="dateLabel in scheduledDatesForDish(dish)" :key="dateLabel">
+                        <span
+                          class="text-[11px] font-black px-2 py-0.5 rounded-full border border-green-500/20 bg-green-50 text-green-800"
+                          x-text="dateLabel"></span>
+                      </template>
+                    </div>
                   </div>
                   <div class="flex items-center space-x-1">
                     <!-- 已售完快捷按鈕 -->
@@ -451,6 +556,32 @@
                       title="恢復上架供應">
                       <i class="fa-solid fa-circle-check text-[10px]"></i>恢復
                     </button>
+                    <div class="relative">
+                      <details class="relative group">
+                        <summary
+                          class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-800 border border-amber-300/50 text-[11px] font-black hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden"
+                          title="設定此主菜的每日排程">
+                          <i class="fa-solid fa-calendar-days text-[10px]"></i>
+                          <span>排程</span>
+                          <i
+                            class="fa-solid fa-angle-down text-[10px] transition-transform group-open:rotate-180 ml-0.5"></i>
+                        </summary>
+                        <div
+                          class="absolute right-0 bottom-full mb-2 w-64 rounded-2xl border border-slate-200 bg-white shadow-xl p-3 z-50">
+                          <div class="text-[11px] font-bold text-slate-500 mb-2">勾選日期即為供應，未勾選即下架</div>
+                          <template x-for="d in availableNextBusinessDates()" :key="d">
+                            <label
+                              class="flex items-center justify-between gap-2 py-1.5 px-2 rounded-xl hover:bg-amber-500/10 transition-colors cursor-pointer">
+                              <span class="text-xs text-slate-700 font-medium"
+                                x-text="d.slice(5).replace('-', '/') + ' (' + ['日','一','二','三','四','五','六'][new Date(d).getDay()] + ')' "></span>
+                              <input type="checkbox" :checked="isDishScheduledOnDate(dish.id, d)"
+                                @change="toggleDishSchedule(dish.id, d)"
+                                class="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer">
+                            </label>
+                          </template>
+                        </div>
+                      </details>
+                    </div>
                     <button @click="editDish(dish)" class="p-2 text-slate-700 hover:text-brand-700" title="編輯項目"><i
                         class="fa-regular fa-pen-to-square"></i></button>
                     <button @click="triggerDeleteDish(dish.id)" class="p-2 text-red-500 hover:text-red-700"
@@ -485,16 +616,25 @@
             <div class="grid grid-cols-1 gap-3 text-base">
               <input type="text" x-model="orderQuery" placeholder="搜尋訂購單位或姓名"
                 class="w-full px-3 py-3 rounded-xl glass-input text-base font-bold">
-              <div class="flex flex-wrap gap-2">
+              <div class="flex flex-wrap gap-2 items-center">
                 <button type="button" @click="orderStatusFilter = 'all'"
-                  :class="orderStatusFilter === 'all' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'"
-                  class="px-4 py-2 rounded-xl border border-slate-200 text-base font-bold">全部</button>
+                  :class="orderStatusFilter === 'all' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'"
+                  class="px-4 py-2 rounded-xl border text-base font-bold transition-all">全部</button>
                 <button type="button" @click="orderStatusFilter = '未接單'"
-                  :class="orderStatusFilter === '未接單' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'"
-                  class="px-4 py-2 rounded-xl border border-slate-200 text-base font-bold">未接單</button>
+                  :class="orderStatusFilter === '未接單' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'"
+                  class="px-4 py-2 rounded-xl border text-base font-bold transition-all">未接單</button>
                 <button type="button" @click="orderStatusFilter = '已接單'"
-                  :class="orderStatusFilter === '已接單' ? 'bg-brand-500 text-white' : 'bg-white text-slate-600'"
-                  class="px-4 py-2 rounded-xl border border-slate-200 text-base font-bold">已接單</button>
+                  :class="orderStatusFilter === '已接單' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'"
+                  class="px-4 py-2 rounded-xl border text-base font-bold transition-all">已接單</button>
+                <div class="min-w-[220px]">
+                  <select x-model="orderScheduleFilter"
+                    :class="orderScheduleFilter !== 'all' ? 'bg-brand-50 text-brand-800 border-brand-300' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'"
+                    class="w-full rounded-xl px-4 py-2 border text-base font-bold focus:outline-none cursor-pointer transition-all">
+                    <template x-for="opt in scheduleFilterOptions" :key="opt.value">
+                      <option :value="opt.value" x-text="opt.label" class="bg-white text-slate-800"></option>
+                    </template>
+                  </select>
+                </div>
               </div>
             </div>
             <div
@@ -504,7 +644,7 @@
                   <tr class="text-sm font-black">
                     <th class="px-4 py-3 w-[120px]">訂單編號</th>
                     <th class="px-4 py-3 w-[180px]">訂購資訊</th>
-                    <th class="px-4 py-3 w-[120px]">時間</th>
+                    <th class="px-4 py-3 w-[140px]">時間 / 預定</th>
                     <th class="px-4 py-3 w-[220px]">配送地址</th>
                     <th class="px-4 py-3 min-w-[360px]">餐點明細</th>
                     <th class="px-4 py-3 w-[110px]">總金額</th>
@@ -528,7 +668,10 @@
                       </td>
                       <td class="px-4 py-3">
                         <div class="font-bold text-slate-900 text-base" x-text="order.timestamp"></div>
-                        <div class="text-sm text-slate-500 mt-1" x-text="order.deliveryTime || '未註明'"></div>
+                        <div class="text-sm text-slate-500 mt-1"
+                          x-text="order.scheduledDate ? '預定：' + order.scheduledDate : '預定：今日'"></div>
+                        <div class="text-sm text-slate-500 mt-1"
+                          x-text="order.deliveryTime ? '送達：' + order.deliveryTime : '送達：未註明'"></div>
                       </td>
                       <td class="px-4 py-3 font-bold text-slate-900 whitespace-normal text-base"
                         x-text="order.deliveryAddress || '未註明'"></td>
@@ -545,6 +688,10 @@
                                 <span>飯量：<span class="text-slate-700" x-text="item.rice"></span></span>
                                 <span>價格：NT$<span class="text-slate-700" x-text="item.price"></span></span>
                                 <span>數量：<span class="text-slate-700" x-text="item.count"></span></span>
+                              </div>
+                              <div class="mt-1 text-sm font-bold text-slate-500">
+                                <span>預定日期：<span class="text-slate-700"
+                                    x-text="order.scheduledDate || '今日'"></span></span>
                               </div>
                               <div x-show="item.dislikes.length > 0 || item.otherDislike"
                                 class="mt-1 text-sm font-bold text-rose-700">
@@ -616,16 +763,28 @@
                         <div class="space-y-3 text-right">
                           <div class="text-3xl font-black text-brand-700" x-text="'NT$' + order.totalAmount"></div>
                           <div class="text-2xl font-black text-slate-900" x-text="'狀態：' + order.status"></div>
-                          <div class="text-lg text-slate-600" x-text="'下單：' + order.timestamp"></div>
+                          <div
+                            class="text-base font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-xl border border-amber-200 inline-block"
+                            x-text="'預定日期：' + (order.scheduledDate ? (order.scheduledDate.replace(/-/g, '/') + ' (' + ['日','一','二','三','四','五','六'][new Date(order.scheduledDate).getDay()] + ')') : '今日')">
+                          </div>
+                          <div class="text-base text-slate-600 font-bold"
+                            x-text="'訂購日期：' + ((order.createdAt ? order.createdAt.slice(0, 10).replace(/-/g, '/') + ' ' : '') + (order.timestamp || ''))">
+                          </div>
                         </div>
                       </div>
 
                       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div class="rounded-3xl bg-brand-50 p-5 border border-brand-100 text-lg text-slate-700">
-                          <div class="font-black mb-3">配送資訊</div>
-                          <div>送達時間：<span class="font-bold text-slate-900" x-text="order.deliveryTime || '未註明'"></span>
+                          <div class="font-black mb-3">配送與日期資訊</div>
+                          <div>預定日期：<span class="font-bold text-amber-900"
+                              x-text="order.scheduledDate ? (order.scheduledDate.replace(/-/g, '/') + ' (' + ['日','一','二','三','四','五','六'][new Date(order.scheduledDate).getDay()] + ')') : '今日'"></span>
                           </div>
-                          <div class="mt-2">地址：<span class="font-bold text-slate-900"
+                          <div class="mt-1">訂購日期：<span class="font-bold text-slate-900"
+                              x-text="(order.createdAt ? order.createdAt.slice(0, 10).replace(/-/g, '/') + ' ' : '') + (order.timestamp || '')"></span>
+                          </div>
+                          <div class="mt-1">送達時間：<span class="font-bold text-slate-900"
+                              x-text="order.deliveryTime || '未註明'"></span></div>
+                          <div class="mt-1">配送地址：<span class="font-bold text-slate-900"
                               x-text="order.deliveryAddress || '未註明'"></span></div>
                         </div>
                         <div class="rounded-3xl bg-brand-50 p-5 border border-brand-100 text-lg text-slate-700">
@@ -804,17 +963,21 @@
               </label>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="rounded-3xl border border-white/20 bg-white/20 backdrop-blur-md p-4 shadow-lg shadow-slate-500/10">
+              <div
+                class="rounded-3xl border border-white/20 bg-white/20 backdrop-blur-md p-4 shadow-lg shadow-slate-500/10">
                 <label class="block text-xs font-bold text-slate-500 mb-2">每日重新開啟時間</label>
                 <input type="time" x-model="settings.orderResetTime" @change="queueSettingsSave()"
                   class="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm bg-white/90" />
                 <p class="text-[11px] text-slate-500 mt-1">超過該時間後，訂單截止會重製。</p>
               </div>
-              <div class="rounded-3xl border border-white/20 bg-white/20 backdrop-blur-md p-4 shadow-lg shadow-slate-500/10">
+              <div
+                class="rounded-3xl border border-white/20 bg-white/20 backdrop-blur-md p-4 shadow-lg shadow-slate-500/10">
                 <label class="block text-xs font-bold text-slate-500 mb-2">目前設定</label>
                 <div class="space-y-2 text-sm text-slate-700">
                   <p>重製時間：<span x-text="settings.orderResetTime || '14:00'"></span></p>
-                  <p>訂單狀態：<span x-text="settings.orderClosed ? '截止中' : '開放中'" :class="settings.orderClosed ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'"></span></p>
+                  <p>訂單狀態：<span x-text="settings.orderClosed ? '截止中' : '開放中'"
+                      :class="settings.orderClosed ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'"></span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -916,12 +1079,16 @@
         adminTab: 'orders',
         orders: [],
         mainDishes: [],
+        plannedMenus: [],
+        newPlannedDate: '',
         photoSlides: [],
         announcements: [],
         newPhoto: { src: '', label: '' },
         newAnnouncement: { title: '', body: '' },
         orderQuery: '',
         orderStatusFilter: 'all',
+        orderScheduleFilter: 'all',
+        boardDateFilter: 'all',
         allOrdersLargeView: false,
         settingsSaveTimer: null,
         isLoadingSettings: false,
@@ -971,6 +1138,7 @@
             const removed = [...prevIds].filter(id => !newIds.has(id));
 
             if (added.length > 0) {
+              this.playNotificationSound();
               this.showToast(`🔔 收到 ${added.length} 筆新訂單，請儘速接單！`, 'success');
             }
             if (removed.length > 0) {
@@ -1056,6 +1224,11 @@
           } else {
             this.announcements = [];
           }
+          // 載入管理員排定的每日主菜計畫
+          const plans = await VegeBentoDB.getPlannedMenus();
+          this.plannedMenus = Array.isArray(plans) ? plans : [];
+          // 確保存在今日起的預設排程（今日 + 後續 5 個工作天）
+          this.ensurePlannedMenusForNextDays();
         },
 
         async loadSettings() {
@@ -1174,12 +1347,76 @@
           this.confirmModal.show = true;
         },
 
+        playNotificationSound() {
+          try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            if (ctx.state === 'suspended') {
+              ctx.resume();
+            }
+
+            // 第一聲：高音叮 (C5)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
+            gain1.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(ctx.currentTime);
+            osc1.stop(ctx.currentTime + 0.35);
+
+            // 第二聲：更高音咚 (E5)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15);
+            gain2.gain.setValueAtTime(0.35, ctx.currentTime + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(ctx.currentTime + 0.15);
+            osc2.stop(ctx.currentTime + 0.6);
+          } catch (e) {
+            console.error('Play notification sound failed:', e);
+          }
+        },
+
+        triggerClearAllOrders() {
+          this.confirmModal.title = '清除今日訂單確認';
+          this.confirmModal.message = '此操作將清除今日所有的點餐資料且無法復原。是否確認清除？';
+          this.confirmModal.actionType = 'clearOrders';
+          this.confirmModal.targetId = null;
+          this.confirmModal.show = true;
+        },
+
+        triggerDeliverAllAcceptedOrders() {
+          const pending = this.orders.filter(o => o.status === '已接單');
+          if (pending.length === 0) {
+            return this.showToast('目前沒有【已接單】狀態的訂單！', 'warning');
+          }
+          this.confirmModal.title = '全部送出確認';
+          this.confirmModal.message = `確定要將現有 ${pending.length} 筆【已接單】訂單全部標記為【已送出】嗎？`;
+          this.confirmModal.actionType = 'deliverAllAcceptedOrders';
+          this.confirmModal.targetId = null;
+          this.confirmModal.show = true;
+        },
+
         async executeConfirmedAction() {
           this.confirmModal.show = false;
           if (this.confirmModal.actionType === 'clearOrders') {
             this.orders = [];
             await VegeBentoDB.clearAllOrders();
             this.showToast('今日點餐資料已全部重置！', 'warning');
+          } else if (this.confirmModal.actionType === 'deliverAllAcceptedOrders') {
+            const pending = this.orders.filter(o => o.status === '已接單');
+            for (const order of pending) {
+              order.status = '已送出';
+              await VegeBentoDB.saveOrder(order);
+            }
+            this.showToast(`已成功將 ${pending.length} 筆【已接單】訂單全部更新為【已送出】！`);
           } else if (this.confirmModal.actionType === 'deleteOrder') {
             const idToDelete = this.confirmModal.targetId;
             this.orders = this.orders.filter(o => o.id !== idToDelete);
@@ -1204,6 +1441,9 @@
               defaultDeliveryAddress: '',
               deliveryAddressHint: '',
               requireDeliveryAddress: false,
+              orderClosed: false,
+              orderClosedAt: null,
+              orderResetTime: '14:00',
               colorPassword: ['黃', '紅', '紅']
             };
             await VegeBentoDB.saveAdminSettings(this.settings);
@@ -1297,6 +1537,16 @@
           this.showToast(`訂單 ${order.id} 狀態已成功更新為【${order.status}】`);
         },
 
+        async acceptAllOrders() {
+          const pending = this.orders.filter(o => o.status === '已接單');
+          if (pending.length === 0) return;
+          for (const order of pending) {
+            order.status = '已送出';
+            await VegeBentoDB.saveOrder(order);
+          }
+          this.showToast(`已將 ${pending.length} 筆已接單訂單全部送出！`);
+        },
+
         async saveMainDish() {
           if (!this.editingDish.name.trim()) return this.showToast('請輸入主菜項目名稱！', 'warning');
           if (this.editingDish.priceType === 'range' && !this.editingDish.specificPrice.trim()) return this.showToast('請輸入適用價格數字！', 'warning');
@@ -1324,6 +1574,138 @@
           await VegeBentoDB.saveDish(dishToSave);
           this.resetEditingDish();
         },
+
+        // --- Planned menus management ---
+
+        // 回傳從今天起（包含今天）往後的 n 個非週末日期（預設包含今天 + 5 個後續工作日）
+        availableNextBusinessDates(n = 6) {
+          const res = [];
+          const d = new Date();
+          while (res.length < n) {
+            const day = d.getDay();
+            if (day !== 0 && day !== 6) res.push(d.toISOString().slice(0, 10));
+            d.setDate(d.getDate() + 1);
+          }
+          return res;
+        },
+
+        // 確保系統有今日起的排程（不覆寫既有設定），並初始化 priceOverrides
+        ensurePlannedMenusForNextDays(n = 6) {
+          const dates = this.availableNextBusinessDates(n);
+          dates.forEach(d => {
+            const exists = this.plannedMenus.find(p => p.date === d);
+            if (!exists) {
+              this.plannedMenus.push({ date: d, dishIds: [], priceOverrides: {} });
+            } else {
+              if (!exists.priceOverrides) exists.priceOverrides = {};
+              if (!Array.isArray(exists.dishIds)) exists.dishIds = [];
+            }
+          });
+          // 保持排序：依日期排序
+          this.plannedMenus.sort((a, b) => a.date.localeCompare(b.date));
+        },
+
+        addPlannedDate(date) {
+          if (!date) return this.showToast('請選擇日期再新增', 'warning');
+          const exists = this.plannedMenus.find(p => p.date === date);
+          if (exists) return this.showToast('此日期已存在排程', 'warning');
+          this.plannedMenus.push({ date, dishIds: [], priceOverrides: {} });
+          this.showToast('已新增排程日期', 'success');
+        },
+
+        removePlannedDate(date) {
+          this.plannedMenus = this.plannedMenus.filter(p => p.date !== date);
+          this.showToast('已移除排程日期', 'warning');
+        },
+
+        toggleDishInPlanned(date, dishId) {
+          let plan = this.plannedMenus.find(p => p.date === date);
+          if (!plan) {
+            // 若該日期尚未存在，初始化一筆
+            plan = { date, dishIds: [], priceOverrides: {} };
+            this.plannedMenus.push(plan);
+          }
+          if (!Array.isArray(plan.dishIds)) plan.dishIds = [];
+          const idx = plan.dishIds.indexOf(dishId);
+          if (idx > -1) {
+            plan.dishIds.splice(idx, 1);
+            if (plan.priceOverrides) delete plan.priceOverrides[dishId];
+          } else {
+            plan.dishIds.push(dishId);
+            if (!plan.priceOverrides) plan.priceOverrides = {};
+          }
+        },
+
+        isDishScheduledOnDate(dishId, date) {
+          const plan = this.plannedMenus.find(p => p.date === date);
+          return plan && Array.isArray(plan.dishIds) && plan.dishIds.includes(dishId);
+        },
+
+        isDishScheduled(dish) {
+          return this.plannedMenus.some(plan => Array.isArray(plan.dishIds) && plan.dishIds.includes(dish.id));
+        },
+
+        scheduledDatesForDish(dish) {
+          if (!dish || !this.plannedMenus) return [];
+          const weekdayZh = ['日', '一', '二', '三', '四', '五', '六'];
+          return this.plannedMenus
+            .filter(plan => Array.isArray(plan.dishIds) && plan.dishIds.includes(dish.id))
+            .map(plan => {
+              const d = plan.date;
+              const dateObj = new Date(d);
+              return d.slice(5).replace('-', '/') + ' (' + weekdayZh[dateObj.getDay()] + ')';
+            });
+        },
+
+        async toggleDishSchedule(dishId, date) {
+          let plan = this.plannedMenus.find(p => p.date === date);
+          if (!plan) {
+            plan = { date, dishIds: [], priceOverrides: {} };
+            this.plannedMenus.push(plan);
+          }
+          if (!Array.isArray(plan.dishIds)) plan.dishIds = [];
+
+          const idx = plan.dishIds.indexOf(dishId);
+          if (idx > -1) {
+            plan.dishIds.splice(idx, 1);
+            if (plan.priceOverrides) delete plan.priceOverrides[dishId];
+          } else {
+            plan.dishIds.push(dishId);
+          }
+
+          await VegeBentoDB.savePlannedMenus(this.plannedMenus);
+          this.syncDishAvailabilityFromPlan(dishId);
+          this.showToast('排程日期已更新並已同步資料庫。', 'success');
+        },
+
+        syncDishAvailabilityFromPlan(dishId) {
+          const dish = this.mainDishes.find(d => d.id === dishId);
+          if (!dish) return;
+          const scheduled = this.isDishScheduled(dish);
+          dish.available = scheduled;
+          VegeBentoDB.saveDish(dish).catch(() => {
+            this.showToast('無法同步主菜狀態到資料庫，請稍後再試。', 'danger');
+          });
+        },
+
+        // 設定或移除單日覆寫價錢
+        setPriceOverride(date, dishId, value) {
+          const plan = this.plannedMenus.find(p => p.date === date);
+          if (!plan) return;
+          if (!plan.priceOverrides) plan.priceOverrides = {};
+          const v = String(value).trim();
+          if (!v) {
+            delete plan.priceOverrides[dishId];
+          } else {
+            plan.priceOverrides[dishId] = v;
+          }
+        },
+
+        async savePlannedMenus() {
+          await VegeBentoDB.savePlannedMenus(this.plannedMenus);
+          this.showToast('每日排程主菜已儲存', 'success');
+        },
+
 
         // 標記已售完（快速下架）
         async markDishSoldOut(dish) {
@@ -1376,6 +1758,47 @@
             }
           });
           return [...itemMap.values()];
+        },
+
+        get upcomingScheduledOrders() {
+          const today = new Date().toISOString().slice(0, 10);
+          return [...this.orders]
+            .filter(order => order.scheduledDate && order.scheduledDate >= today)
+            .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+        },
+
+        get upcomingScheduledByDate() {
+          const today = new Date();
+          const end = new Date();
+          end.setDate(today.getDate() + 4); // next 5 days
+          const iso = d => d.toISOString().slice(0, 10);
+          const startIso = iso(today);
+          const endIso = iso(end);
+          const groups = new Map();
+          (this.orders || []).forEach(order => {
+            if (!order.scheduledDate) return;
+            const d = String(order.scheduledDate);
+            if (d < startIso || d > endIso) return;
+            if (!groups.has(d)) groups.set(d, []);
+            groups.get(d).push(order);
+          });
+          const weekdayZh = ['日', '一', '二', '三', '四', '五', '六'];
+          return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([date, orders]) => {
+            const itemCounts = new Map();
+            let totalBoxes = 0;
+            orders.forEach(o => {
+              (o.items || []).forEach(it => {
+                const key = it.summary || `${it.name}|${it.mainDish}|${it.rice}|${it.riceType}|${it.price}`;
+                const cnt = Number(it.count || 1);
+                itemCounts.set(key, (itemCounts.get(key) || 0) + cnt);
+                totalBoxes += cnt;
+              });
+            });
+            const items = Array.from(itemCounts.entries()).map(([summary, count]) => ({ summary, count }));
+            const wd = weekdayZh[new Date(date).getDay()];
+            const formattedDate = date.slice(5).replace('-', '/') + `(${wd})`;
+            return { date, formattedDate, items, totalBoxes, ordersCount: orders.length };
+          });
         },
 
         orderGroupKey(order) {
@@ -1491,17 +1914,70 @@
           });
         },
         get displayOrders() {
-          return this.groupOrdersForDisplay(this.sortedOrders);
+          let list = this.sortedOrders;
+          if (this.boardDateFilter !== 'all') {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            list = list.filter(order => {
+              const d = order.scheduledDate || todayStr;
+              return d === this.boardDateFilter;
+            });
+          }
+          return this.groupOrdersForDisplay(list);
+        },
+
+        get boardDateFilterOptions() {
+          const seen = new Set();
+          const options = [];
+          const todayStr = new Date().toISOString().slice(0, 10);
+
+          this.orders.forEach(o => {
+            const d = o.scheduledDate || todayStr;
+            seen.add(d);
+          });
+          if (Array.isArray(this.plannedMenus)) {
+            this.plannedMenus.forEach(p => {
+              if (p.date) seen.add(p.date);
+            });
+          }
+          seen.add(todayStr);
+
+          const sortedDates = Array.from(seen).sort();
+          sortedDates.forEach(date => {
+            const wd = ['日', '一', '二', '三', '四', '五', '六'][new Date(date).getDay()];
+            const label = `${date.replace(/-/g, '/')} (${wd})` + (date === todayStr ? ' [今日]' : '');
+            options.push({ value: date, label });
+          });
+          return options;
         },
         get filteredOrders() {
           return this.orders.filter(order => {
             const query = this.orderQuery.trim().toLowerCase();
             const statusMatch = this.orderStatusFilter === 'all' || order.status === this.orderStatusFilter;
+            const today = new Date().toISOString().slice(0, 10);
+            const scheduleValue = order.scheduledDate || today;
+            const scheduleMatch = this.orderScheduleFilter === 'all' || scheduleValue === this.orderScheduleFilter;
             const queryMatch = !query || order.unit.toLowerCase().includes(query)
               || order.userName.toLowerCase().includes(query)
               || (order.userPhone || '').toLowerCase().includes(query);
-            return statusMatch && queryMatch;
+            return statusMatch && scheduleMatch && queryMatch;
           });
+        },
+
+        get scheduleFilterOptions() {
+          const options = [{ value: 'all', label: '所有排程' }];
+          const seen = new Set();
+          const today = new Date().toISOString().slice(0, 10);
+          this.orders.forEach(order => {
+            const date = order.scheduledDate || today;
+            if (!seen.has(date)) {
+              seen.add(date);
+              options.push({
+                value: date,
+                label: date === today ? '今日' : date
+              });
+            }
+          });
+          return options;
         },
 
         triggerClearAllOrders() {

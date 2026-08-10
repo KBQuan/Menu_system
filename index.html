@@ -205,8 +205,9 @@
   </style>
 </head>
 
-<body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-cover bg-center bg-fixed"
-  style="background-image: url('background.jpg');" x-data="bentoApp()"
+<body class="text-slate-800 font-sans min-h-screen flex flex-col relative bg-center bg-fixed"
+  style="background-image: url('background.jpg'); background-attachment: fixed; background-repeat: no-repeat; background-size: cover;"
+  x-data="bentoApp()"
   x-init="init(); $watch('fontSizeLevel', v => { document.documentElement.style.fontSize = v === 0 ? '14px' : v === 2 ? '18px' : '16px'; })">
   <div class="liquid-mesh"></div>
 
@@ -261,8 +262,9 @@
       </nav>
 
       <div class="flex items-center gap-2">
-        
-        <div class="flex items-center gap-1.5 bg-white/50 backdrop-blur-sm border border-slate-200 rounded-full px-2 py-1"
+
+        <div
+          class="flex items-center gap-1.5 bg-white/50 backdrop-blur-sm border border-slate-200 rounded-full px-2 py-1"
           title="文字大小調整">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1 hidden sm:inline">字級</span>
           <button @click="fontSizeLevel = 0"
@@ -278,7 +280,8 @@
             class="w-7 h-7 rounded-full font-black transition-all duration-150 flex items-center justify-center"
             style="font-size: 17px;" title="大字">A</button>
         </div>
-        <span :class="orderClosed ? 'bg-red-500/20 text-red-800 border-red-500/20' : 'bg-emerald-500/20 text-emerald-800 border-emerald-500/20'"
+        <span
+          :class="orderClosed ? 'bg-red-500/20 text-red-800 border-red-500/20' : 'bg-emerald-500/20 text-emerald-800 border-emerald-500/20'"
           class="text-[10px] font-bold px-3 py-1 border rounded-full whitespace-nowrap"
           x-text="orderClosed ? '系統截止中' : '系統開放中'"></span>
       </div>
@@ -325,13 +328,15 @@
           <template x-for="(item, index) in announcements" :key="index">
             <div class="border-b border-slate-200 last:border-b-0 pb-3 last:pb-0">
               <p class="text-xs font-semibold text-amber-800" x-text="item.title"></p>
-              <p class="text-xs text-slate-600 mt-1 whitespace-pre-wrap break-words" x-html="formatAnnouncementBody(item.body)"></p>
+              <p class="text-xs text-slate-600 mt-1 whitespace-pre-wrap break-words"
+                x-html="formatAnnouncementBody(item.body)"></p>
             </div>
           </template>
 
           <div>
             <p class="text-xs font-bold text-amber-900">系統回饋及建議</p>
-            <p class="mt-2 text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">若對於本系統有些使用習慣上有疑問或想新增什麼更便利的功能，可點選下方連結給予建議！</p>
+            <p class="mt-2 text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
+              若對於本系統有些使用習慣上有疑問或想新增什麼更便利的功能，可點選下方連結給予建議！</p>
             <a href="https://docs.google.com/forms/d/e/1FAIpQLSeyFhSnDM0DNW72pOLiwWlY2Bct9EYtCZRUlPDC8mQVSHedIg/viewform?usp=publish-editor"
               target="_blank" rel="noopener noreferrer"
               class="inline-block mt-3 px-3 py-2 rounded-full bg-amber-700 text-white text-[11px] font-bold tracking-wide hover:bg-amber-800 transition">前往回饋表單</a>
@@ -341,6 +346,8 @@
     </aside>
 
     <section class="lg:col-span-8 w-full space-y-6">
+
+      <!-- 近期預購訂單功能已移至後台管理頁面（admin.html）下方顯示 -->
 
       <div class="glass-panel p-6 space-y-5">
         <div class="flex items-center justify-between border-b border-amber-900/5 pb-4">
@@ -379,24 +386,57 @@
                 class="w-full glass-input rounded-xl pl-8 pr-3 py-3 text-sm font-medium focus:outline-none">
             </div>
           </div>
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">預定日期<span
+                class="text-rose-500">*</span></label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-100 text-xs pointer-events-none">
+                <i class="fa-solid fa-calendar-days"></i>
+              </span>
+              <template x-if="plannedMenus && plannedMenus.length > 0">
+                <select x-model="clientForm.scheduledDate" @change="autoSelectFirstAvailableDish()"
+                  class="w-full glass-input rounded-xl pl-8 pr-10 py-3 text-sm font-medium text-amber-900 focus:outline-none appearance-none cursor-pointer">
+                  <template x-for="plan in plannedMenus" :key="plan.date">
+                    <option :value="plan.date"
+                      x-text="plan.date.slice(5).replace('-','/') + ' (' + ['日','一','二','三','四','五','六'][new Date(plan.date).getDay()] + ')' ">
+                    </option>
+                  </template>
+                </select>
+              </template>
+              <template x-if="!plannedMenus || plannedMenus.length === 0">
+                <select x-model="clientForm.scheduledDate" @change="autoSelectFirstAvailableDish()"
+                  class="w-full glass-input rounded-xl pl-8 pr-10 py-3 text-sm font-medium text-amber-900 focus:outline-none appearance-none cursor-pointer">
+                  <template x-for="d in availableNextBusinessDates()" :key="d">
+                    <option :value="d"
+                      x-text="d.slice(5).replace('-','/') + ' (' + ['日','一','二','三','四','五','六'][new Date(d).getDay()] + ')' ">
+                    </option>
+                  </template>
+                </select>
+              </template>
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">
+                <i class="fa-solid fa-chevron-down"></i>
+              </span>
+            </div>
+            <template x-if="!plannedMenus || plannedMenus.length === 0">
+              <p class="text-xs text-slate-400 mt-1">顯示今日及未來 5 個工作天（不含週六、週日）。</p>
+            </template>
+          </div>
         </div>
 
-        <div
-          class="pt-2 flex flex-wrap gap-6 items-center justify-between bg-amber-900/[0.02] rounded-xl p-4 border border-dashed border-amber-700/20">
-          <div class="flex items-center gap-3">
-          </div>
-
+        <div class="flex justify-center pt-2">
           <button @click="toggleCustomization()"
-            class="text-xs font-bold px-4 py-2 rounded-xl border flex items-center gap-2 transition-all shadow-sm glass-btn"
+            class="text-sm sm:text-base font-bold px-6 py-3 rounded-3xl border flex items-center justify-center gap-3 transition-all shadow-lg glass-btn"
             :class="clientForm.isCustomized ? 'bg-amber-500/10 text-amber-700 border-amber-300' : 'text-slate-600 border-slate-200'">
             <template x-if="clientForm.isCustomized">
-              <span class="inline-flex items-center gap-2">
-                <span>GO</span><i class="fa-solid fa-arrow-right text-[10px]"></i><span>團體單一規格</span>
+              <span class="inline-flex items-center gap-3">
+                <span class="text-lg font-extrabold">GO</span><i
+                  class="fa-solid fa-arrow-right text-sm"></i><span>團體單一規格</span>
               </span>
             </template>
             <template x-if="!clientForm.isCustomized">
-              <span class="inline-flex items-center gap-2">
-                <span>GO</span><i class="fa-solid fa-arrow-right text-[10px]"></i><span>餐點客製化</span>
+              <span class="inline-flex items-center gap-3">
+                <span class="text-lg font-extrabold">GO</span><i
+                  class="fa-solid fa-arrow-right text-sm"></i><span>餐點客製化</span>
               </span>
             </template>
           </button>
@@ -454,6 +494,7 @@
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">飯別</label>
               <select x-model="clientForm.singleBento.riceType"
+                @change="if (clientForm.singleBento.riceType === '不飯菜多') { clientForm.singleBento.rice = '不飯菜多' }"
                 class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
                 <option value="">請選擇飯別</option>
                 <template x-for="type in riceTypeOptions" :key="type">
@@ -463,14 +504,15 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">飯量調整</label>
-              <select x-model="clientForm.singleBento.rice" :disabled="!clientForm.singleBento.riceType"
-                :class="!clientForm.singleBento.riceType ? 'opacity-70 cursor-not-allowed' : ''"
+              <select x-model="clientForm.singleBento.rice"
+                :disabled="!clientForm.singleBento.riceType || clientForm.singleBento.riceType === '不飯菜多'"
+                :class="!clientForm.singleBento.riceType || clientForm.singleBento.riceType === '不飯菜多' ? 'opacity-70 cursor-not-allowed' : ''"
                 class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
                 <option value="正常">正常</option>
                 <option value="半飯">半飯(1/2)</option>
                 <option value="少飯">少飯(1/3)</option>
                 <option value="多飯">多飯(2/3)</option>
-                <option value="不飯菜多">不飯菜多</option>
+                <option value="不飯菜多">-</option>
               </select>
             </div>
           </div>
@@ -489,6 +531,17 @@
                 <option :value="dish.name" x-text="dish.name + ' · ' + dish.vegType"></option>
               </template>
             </select>
+            <template x-if="plannedMenus && plannedMenus.length > 0">
+              <div class="text-xs mt-2 text-slate-500">
+                <template x-if="plannedDishNamesForSelectedDate().length > 0">
+                  當日可選主菜：<span class="font-medium text-slate-700"
+                    x-text="plannedDishNamesForSelectedDate().join('、')"></span>
+                </template>
+                <template x-if="plannedDishNamesForSelectedDate().length === 0">
+                  <span class="text-rose-600 font-medium">管理員尚未為所選日期指定任何供應主菜。</span>
+                </template>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -609,7 +662,7 @@
                 <div class="space-y-3">
                   <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">飯別</label>
-                    <select x-model="row.riceType"
+                    <select x-model="row.riceType" @change="if (row.riceType === '不飯菜多') { row.rice = '不飯菜多' }"
                       class="w-full glass-input rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none">
                       <option value="">請選擇飯別</option>
                       <template x-for="type in riceTypeOptions" :key="type">
@@ -619,14 +672,14 @@
                   </div>
                   <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">飯量調整</label>
-                    <select x-model="row.rice" :disabled="!row.riceType"
-                      :class="!row.riceType ? 'opacity-70 cursor-not-allowed' : ''"
+                    <select x-model="row.rice" :disabled="!row.riceType || row.riceType === '不飯菜多'"
+                      :class="!row.riceType || row.riceType === '不飯菜多' ? 'opacity-70 cursor-not-allowed' : ''"
                       class="w-full glass-input rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none">
                       <option value="正常">正常</option>
                       <option value="半飯">半飯(1/2)</option>
                       <option value="少飯">少飯(1/3)</option>
                       <option value="多飯">多飯(2/3)</option>
-                      <option value="不飯菜多">不飯菜多</option>
+                      <option value="不飯菜多">-</option>
                     </select>
                   </div>
                 </div>
@@ -642,6 +695,17 @@
                       <option :value="dish.name" x-text="dish.name + ' · ' + dish.vegType"></option>
                     </template>
                   </select>
+                  <template x-if="plannedMenus && plannedMenus.length > 0 && clientForm.scheduledDate">
+                    <div class="text-[10px] mt-1 text-slate-500">
+                      <template x-if="plannedDishNamesForSelectedDate().length > 0">
+                        當日可選主菜：<span class="font-medium text-slate-700"
+                          x-text="plannedDishNamesForSelectedDate().join('、')"></span>
+                      </template>
+                      <template x-if="plannedDishNamesForSelectedDate().length === 0">
+                        <span class="text-rose-600 font-medium">管理員尚未為所選日期指定任何供應主菜。</span>
+                      </template>
+                    </div>
+                  </template>
                 </div>
               </div>
 
@@ -872,6 +936,10 @@
                 <p>訂購單位：<span class="text-slate-800" x-text="order.unit"></span></p>
                 <p>主要負責人：<span class="text-slate-800" x-text="order.userName"></span></p>
                 <p>發送時間：<span class="text-slate-800 font-mono" x-text="order.timestamp"></span></p>
+                <p>訂購日期：<span class="text-slate-800"
+                    x-text="order.createdAt ? (new Date(order.createdAt).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })) : '未知'"></span>
+                </p>
+                <p>預定日期：<span class="text-slate-800" x-text="order.scheduledDate || '今日'"></span></p>
                 <p>指定送達：<span class="text-slate-800" x-text="order.deliveryTime || '儘速送達'"></span></p>
                 <p>餐具：
                   <span class="text-slate-800" aria-label="餐具需求">
@@ -968,6 +1036,10 @@
               <p>訂購單位：<span class="text-slate-800" x-text="order.unit"></span></p>
               <p>主要負責人：<span class="text-slate-800" x-text="order.userName"></span></p>
               <p>發送時間：<span class="text-slate-800 font-mono" x-text="order.timestamp"></span></p>
+              <p>訂購日期：<span class="text-slate-800"
+                  x-text="order.createdAt ? (new Date(order.createdAt).toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })) : '未知'"></span>
+              </p>
+              <p>預定日期：<span class="text-slate-800" x-text="order.scheduledDate || '今日'"></span></p>
               <p>指定送達：<span class="text-slate-800" x-text="order.deliveryTime || '儘速送達'"></span></p>
               <p>餐具：
                 <span class="text-slate-800" aria-label="餐具需求">
@@ -1054,13 +1126,15 @@
         <template x-for="(item, index) in announcements" :key="index">
           <div class="rounded-3xl border border-slate-200 p-4 bg-slate-50">
             <p class="text-sm font-bold text-amber-800" x-text="item.title"></p>
-            <p class="mt-2 text-sm text-slate-700 whitespace-pre-wrap break-words" x-html="formatAnnouncementBody(item.body)"></p>
+            <p class="mt-2 text-sm text-slate-700 whitespace-pre-wrap break-words"
+              x-html="formatAnnouncementBody(item.body)"></p>
           </div>
         </template>
 
         <div class="rounded-3xl border border-amber-300 bg-amber-50 p-4 shadow-sm">
           <p class="text-sm font-bold text-amber-900">系統回饋及建議</p>
-          <p class="mt-2 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">若對於本系統有些使用習慣上有疑問或想新增什麼更便利的功能，可點選下方連結給予建議！</p>
+          <p class="mt-2 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+            若對於本系統有些使用習慣上有疑問或想新增什麼更便利的功能，可點選下方連結給予建議！</p>
           <a href="https://docs.google.com/forms/d/e/1FAIpQLSeyFhSnDM0DNW72pOLiwWlY2Bct9EYtCZRUlPDC8mQVSHedIg/viewform?usp=publish-editor"
             target="_blank" rel="noopener noreferrer"
             class="inline-block mt-3 text-amber-700 font-bold underline decoration-amber-300 hover:decoration-amber-500">前往回饋表單</a>
@@ -1098,12 +1172,13 @@
         showAnnouncementsModal: false,
         dislikesOptions: ['花椰菜', '咖哩', '茄子', '炸物', '素料', '青椒', '豆子', '苦瓜', '皇宮菜', '秋葵'],
         vegTypeOptions: ['全素', '蛋奶素', '奶素'],
-        riceTypeOptions: ['紫米飯', '白飯'],
+        riceTypeOptions: ['紫米飯', '白飯', '不飯菜多'],
 
         // 全域共用資料池
         orders: [],
         userHistory: [],
         mainDishes: [],
+        plannedMenus: [],
 
         // 編輯模式：記錄正在修改的原始訂單 ID（null 表示新增模式）
         editingOrderId: null,
@@ -1130,6 +1205,7 @@
           needTableware: false,
           needReceipt: false,
           deliveryAddress: '',
+          scheduledDate: new Date().toISOString().slice(0, 10),
           isCustomized: false,
           deliveryTimeType: 'ASAP',
           deliveryTimeValue: '12:00',
@@ -1145,8 +1221,28 @@
           document.documentElement.style.fontSize =
             this.fontSizeLevel === 0 ? '14px' : this.fontSizeLevel === 2 ? '18px' : '16px';
           await this.loadDataFromStorage();
-          await this.applyClientFontSizeSetting();
+          await this.applyClientAdminSettings();
           this.autoSelectFirstAvailableDish();
+
+          // 定時 5 秒同步一次雲端控制設定（例如：關閉點餐、文字大小、預設地址）
+          setInterval(() => {
+            this.applyClientAdminSettings();
+          }, 5000);
+
+          // 監聽預定日期變動，自動切換對應可選主菜
+          this.$watch('clientForm.scheduledDate', () => {
+            this.autoSelectFirstAvailableDish();
+          });
+
+          // 監聽後台菜單與排程變動
+          window.addEventListener('storage', async (e) => {
+            if (e.key === 'vege_bento_main_dishes' || e.key === 'vege_bento_planned_menus' || e.key === 'vege_bento_admin_settings') {
+              await this.loadDataFromStorage();
+              await this.applyClientAdminSettings();
+              this.autoSelectFirstAvailableDish();
+            }
+          });
+
           if (this.photoSlides && this.photoSlides.length > 1) {
             setInterval(() => {
               this.currentSlideIndex = (this.currentSlideIndex + 1) % this.photoSlides.length;
@@ -1154,13 +1250,17 @@
           }
         },
 
-        async applyClientFontSizeSetting() {
+        async applyClientAdminSettings() {
           const settings = await VegeBentoDB.getAdminSettings();
           if (settings) {
             if (settings.clientFontSize) {
               document.documentElement.style.fontSize = settings.clientFontSize + 'px';
             }
             this.orderClosed = this.getAutoReopenedOrderClosed(settings);
+            this.adminSettings = settings;
+            if (settings.defaultDeliveryAddress && (!this.clientForm.deliveryAddress || this.clientForm.deliveryAddress === '')) {
+              this.clientForm.deliveryAddress = settings.defaultDeliveryAddress;
+            }
           }
         },
 
@@ -1228,6 +1328,24 @@
           const dbOrders = await VegeBentoDB.getOrders();
           this.orders = dbOrders;
 
+          // 載入管理員排定的每日主菜 (供前端買家選擇預定日期)
+          const plans = await VegeBentoDB.getPlannedMenus();
+          this.plannedMenus = Array.isArray(plans) ? plans : [];
+          const todayStr = new Date().toISOString().slice(0, 10);
+          if (this.plannedMenus.length > 0) {
+            // 優先選今天；若今天不在排程中，選最近的排程日期
+            if (this.plannedMenus.some(p => p.date === todayStr)) {
+              this.clientForm.scheduledDate = todayStr;
+            } else {
+              // 找最近且 >= 今天的日期
+              const future = this.plannedMenus.filter(p => p.date >= todayStr);
+              this.clientForm.scheduledDate = future.length > 0 ? future[0].date : this.plannedMenus[0].date;
+            }
+          } else {
+            // 無排程時直接預設今天
+            this.clientForm.scheduledDate = todayStr;
+          }
+
           const personalHistory = localStorage.getItem('vege_bento_user_history');
           this.userHistory = this.cleanupUserHistory(personalHistory ? JSON.parse(personalHistory) : []);
           this.syncUserHistoryWithOrders();
@@ -1274,8 +1392,8 @@
 
         getHistoryExpireLabel(order) {
           const createdAt = Date.parse(order.createdAt);
-          if (!Number.isFinite(createdAt)) return '3 天後';
-          const expiresAt = new Date(createdAt + 3 * 24 * 60 * 60 * 1000);
+          if (!Number.isFinite(createdAt)) return '7 天後';
+          const expiresAt = new Date(createdAt + 7 * 24 * 60 * 60 * 1000);
           return expiresAt.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
         },
 
@@ -1286,26 +1404,90 @@
           return dishPriority <= selectedPriority;
         },
 
+
+
+        // 回傳管理員在所選日期所排定的主菜 ID 清單
+        plannedDishIdsForDate(date) {
+          if (!date || !this.plannedMenus || !Array.isArray(this.plannedMenus)) return [];
+          const plan = this.plannedMenus.find(p => p.date === date);
+          if (!plan || !Array.isArray(plan.dishIds)) return [];
+          return plan.dishIds.map(String);
+        },
+
+        // 回傳從今天起（包含今天）往後的 n 個非週末日期（預設包含今天 + 5 個後續工作日）
+        availableNextBusinessDates(n = 6) {
+          const res = [];
+          const d = new Date();
+          // 使用本地時區，從今天開始
+          while (res.length < n) {
+            const day = d.getDay();
+            if (day !== 0 && day !== 6) {
+              res.push(d.toISOString().slice(0, 10));
+            }
+            d.setDate(d.getDate() + 1);
+          }
+          return res;
+        },
+
+        // 回傳該日期可供應的主菜實體列表（考量菜單與價格/vegType 過濾）
         getAvailableDishesForPrice(bentoTarget) {
           const targetPrice = bentoTarget.price === 'other' ? parseInt(bentoTarget.otherPrice || 0) : parseInt(bentoTarget.price);
-          return this.mainDishes.filter(dish => {
+          const selDate = this.clientForm && this.clientForm.scheduledDate ? this.clientForm.scheduledDate : '';
+          const plan = (this.plannedMenus && selDate) ? this.plannedMenus.find(p => p.date === selDate) : null;
+
+          let list = this.mainDishes.filter(dish => {
             if (!dish.available) return false;
             if (!this.isDishCompatibleWithVegType(dish, bentoTarget.vegType)) return false;
+
+            // 檢查該日期是否有單獨覆寫價格
+            const overridePriceStr = plan && plan.priceOverrides ? plan.priceOverrides[dish.id] : null;
+            if (overridePriceStr) {
+              const overridePrice = parseInt(overridePriceStr);
+              return targetPrice >= overridePrice;
+            }
+
             if (dish.priceType === 'all') return true;
             if (dish.priceType === 'range') return targetPrice >= parseInt(dish.specificPrice || 0);
             return false;
-          }).slice(0, 5);
+          });
+          // 選擇日期時，只顯示該日期所提供的主菜
+          if (this.plannedMenus && this.plannedMenus.length > 0 && selDate) {
+            const plannedIds = this.plannedDishIdsForDate(selDate);
+            const plannedSet = new Set(plannedIds);
+            list = list.filter(d => plannedSet.has(String(d.id)));
+          }
+          return list.slice(0, 5);
+        },
+
+        // 回傳所選日期的主菜名稱陣列，供 UI 顯示
+        plannedDishNamesForSelectedDate() {
+          const selDate = this.clientForm && this.clientForm.scheduledDate ? this.clientForm.scheduledDate : '';
+          const ids = this.plannedDishIdsForDate(selDate);
+          if (!ids || ids.length === 0) return [];
+          return this.mainDishes.filter(d => ids.includes(String(d.id)) && d.available).map(d => d.name);
         },
 
         autoSelectFirstAvailableDish() {
           // 團體單
           const singleAvailable = this.getAvailableDishesForPrice(this.clientForm.singleBento);
-          if (singleAvailable.length > 0) this.clientForm.singleBento.mainDish = singleAvailable[0].name;
+          if (singleAvailable.length > 0) {
+            if (!singleAvailable.some(d => d.name === this.clientForm.singleBento.mainDish)) {
+              this.clientForm.singleBento.mainDish = singleAvailable[0].name;
+            }
+          } else {
+            this.clientForm.singleBento.mainDish = '';
+          }
 
           // 客製單
           this.clientForm.customBentos.forEach(row => {
             const rowAvailable = this.getAvailableDishesForPrice(row);
-            if (rowAvailable.length > 0 && !row.mainDish) row.mainDish = rowAvailable[0].name;
+            if (rowAvailable.length > 0) {
+              if (!rowAvailable.some(d => d.name === row.mainDish)) {
+                row.mainDish = rowAvailable[0].name;
+              }
+            } else {
+              row.mainDish = '';
+            }
           });
         },
 
@@ -1366,6 +1548,7 @@
           this.clientForm.needTableware = !!order.needTableware;
           this.clientForm.needReceipt = !!order.needReceipt;
           this.clientForm.deliveryAddress = order.deliveryAddress || '';
+          this.clientForm.scheduledDate = order.scheduledDate || new Date().toISOString().slice(0, 10);
           this.clientForm.globalNote = order.note || '';
           this.clientForm.deliveryTimeType = order.deliveryTime && order.deliveryTime !== '儘速送達' ? 'SPECIFIC' : 'ASAP';
           this.clientForm.deliveryTimeValue = this.clientForm.deliveryTimeType === 'SPECIFIC' ? order.deliveryTime : '12:00';
@@ -1539,6 +1722,7 @@
               { label: `素食選別`, val: this.clientForm.singleBento.vegType },
               { label: `飯別`, val: this.clientForm.singleBento.riceType || '未選擇' },
               { label: `飯量`, val: this.clientForm.singleBento.rice },
+              { label: `預定日期`, val: this.clientForm.scheduledDate || '今日' },
               { label: `NT$ ${p} 單一規格餐盒`, val: `${this.clientForm.singleBento.quantity || 1} 個` }
             ];
           } else {
@@ -1551,6 +1735,7 @@
             });
             return [
               { label: '素食選別', val: this.clientForm.vegType },
+              { label: '預定日期', val: this.clientForm.scheduledDate || '今日' },
               ...Object.keys(summaryMap).map(k => ({ label: k, val: `${summaryMap[k]} 個` }))
             ];
           }
@@ -1580,6 +1765,8 @@
           return [...itemMap.values()];
         },
 
+        // upcomingScheduledByDate removed from front-end; admin shows upcoming schedules
+
         async submitOrder() {
           if (this.isSubmitting) {
             return;
@@ -1594,6 +1781,15 @@
             if (!this.clientForm.unit.trim()) {
               this.showToast('請務必填寫「訂購單位」！', 'danger');
               return;
+            }
+            // 若管理員已有排程，強制買家選擇排定日期
+            if (this.plannedMenus && this.plannedMenus.length > 0) {
+              const ok = this.plannedMenus.some(p => p.date === this.clientForm.scheduledDate);
+              if (!ok) {
+                this.showToast('請選擇管理員已排定的出餐日期再送出訂單。', 'danger');
+                this.isSubmitting = false;
+                return;
+              }
             }
             if (!this.clientForm.userPhone.trim()) {
               this.showToast('請務必填寫「聯絡電話」，以利後續通知與配送。', 'danger');
@@ -1684,6 +1880,7 @@
               status: '未接單',
               deliveryAddress: this.clientForm.deliveryAddress,
               deliveryTime: finalDeliveryTime,
+              scheduledDate: this.clientForm.scheduledDate,
               note: this.clientForm.globalNote.trim()
             };
 
@@ -1701,6 +1898,8 @@
 
             // 表單初始化重置
             this.clientForm.unit = '';
+            this.clientForm.deliveryAddress = '';
+            this.clientForm.scheduledDate = new Date().toISOString().slice(0, 10);
             this.clientForm.globalNote = '';
             this.clientForm.singleBento.quantity = 1;
             this.clientForm.customBentos = [{ name: '同仁 1', price: '80', otherPrice: '', vegType: '全素', riceType: '', rice: '正常', mainDish: '', dislikes: [], otherDislike: '' }];

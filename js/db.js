@@ -148,6 +148,7 @@ const VegeBentoDB = {
           needReceipt: row.need_receipt,
           deliveryTime: row.delivery_time,
           deliveryAddress: row.delivery_address,
+          scheduledDate: row.scheduled_date,
           note: row.note,
           totalAmount: row.total_amount,
           status: row.status,
@@ -179,6 +180,7 @@ const VegeBentoDB = {
           is_customized: order.isCustomized,
           delivery_time: order.deliveryTime,
           delivery_address: order.deliveryAddress || '',
+          scheduled_date: order.scheduledDate || '',
           timestamp: order.timestamp,
           created_at: order.createdAt || new Date().toISOString(),
           status: order.status,
@@ -334,6 +336,45 @@ const VegeBentoDB = {
     localStorage.setItem('vege_bento_announcements', JSON.stringify(announcements));
   },
 
+  // === 6. 管理員每日排程主菜 (Planned Menus by Date) ===
+  async getPlannedMenus() {
+    if (isSupabaseActive) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('vege_bento_planned_menus')
+          .select('*')
+          .order('date', { ascending: true });
+        if (!error && data) {
+          // normalize to front-end shape
+          return (data || []).map(row => ({ date: row.date, dishIds: row.dish_ids || [], priceOverrides: row.price_overrides || {} }));
+        }
+        console.error('Supabase getPlannedMenus error:', error);
+      } catch (err) {
+        console.error('Supabase getPlannedMenus exception:', err);
+      }
+    }
+    const stored = localStorage.getItem('vege_bento_planned_menus');
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  async savePlannedMenus(plans) {
+    // plans: [{ date: 'YYYY-MM-DD', dishIds: [id,...] }, ...]
+    localStorage.setItem('vege_bento_planned_menus', JSON.stringify(plans));
+    if (isSupabaseActive) {
+      try {
+        // simplistic strategy: delete all and insert provided
+        await supabaseClient.from('vege_bento_planned_menus').delete().neq('date', '');
+        if (plans.length > 0) {
+          const payload = plans.map(p => ({ date: p.date, dish_ids: p.dishIds, price_overrides: p.priceOverrides || {} }));
+          const { error } = await supabaseClient.from('vege_bento_planned_menus').insert(payload);
+          if (error) console.error('Supabase savePlannedMenus insert error:', error);
+        }
+      } catch (err) {
+        console.error('Supabase savePlannedMenus exception:', err);
+      }
+    }
+  },
+
   // === 5. 管理員設置 (Admin Settings) ===
   async getAdminSettings() {
     if (isSupabaseActive) {
@@ -346,18 +387,21 @@ const VegeBentoDB = {
           const stored = localStorage.getItem('vege_bento_admin_settings');
           const localSettings = stored ? JSON.parse(stored) : {};
           const cloudSettings = {
-            clientFontSize: data.client_font_size || 14,
-            adminFontSize: data.admin_font_size || 13,
-            requireReceipt: data.require_receipt || false,
-            receiptByDefault: data.receipt_by_default || false,
+            clientFontSize: data.client_font_size ?? 14,
+            adminFontSize: data.admin_font_size ?? 13,
+            requireReceipt: !!data.require_receipt,
+            receiptByDefault: !!data.receipt_by_default,
             defaultDeliveryAddress: data.default_delivery_address || '',
             deliveryAddressHint: data.delivery_address_hint || '',
-            requireDeliveryAddress: data.require_delivery_address || false,
-            orderClosed: data.order_closed || false,
+            requireDeliveryAddress: !!data.require_delivery_address,
+            orderClosed: !!data.order_closed,
             orderClosedAt: data.order_closed_at || null,
-            orderResetTime: data.order_reset_time || '14:00'
+            orderResetTime: data.order_reset_time || '14:00',
+            colorPassword: Array.isArray(data.color_password) ? data.color_password : (localSettings.colorPassword || ['黃', '紅', '紅'])
           };
-          return { ...cloudSettings, ...localSettings };
+          const merged = { ...localSettings, ...cloudSettings };
+          localStorage.setItem('vege_bento_admin_settings', JSON.stringify(merged));
+          return merged;
         }
         if (error && error.code !== 'PGRST116') {
           console.error('Supabase getAdminSettings error:', error);
@@ -385,14 +429,25 @@ const VegeBentoDB = {
           default_delivery_address: settings.defaultDeliveryAddress || '',
           delivery_address_hint: settings.deliveryAddressHint || '',
           require_delivery_address: settings.requireDeliveryAddress,
-          order_closed: settings.orderClosed || false,
+          order_closed: !!settings.orderClosed,
           order_closed_at: settings.orderClosedAt || null,
           order_reset_time: settings.orderResetTime || '14:00'
         };
+        if (Array.isArray(settings.colorPassword)) {
+          payload.color_password = settings.colorPassword;
+        }
         const { error } = await supabaseClient
           .from('vege_bento_admin_settings')
           .upsert(payload);
-        if (error) console.error('Supabase saveAdminSettings error:', error);
+        if (error) {
+          console.warn('Supabase saveAdminSettings initial attempt error:', error);
+          // 若因新增欄位色碼報錯，嘗試移除 color_password 後重試以保證核心控制設定成功寫入
+          delete payload.color_password;
+          const { error: retryError } = await supabaseClient
+            .from('vege_bento_admin_settings')
+            .upsert(payload);
+          if (retryError) console.error('Supabase saveAdminSettings retry error:', retryError);
+        }
       } catch (err) {
         console.error('Supabase saveAdminSettings exception:', err);
       }
@@ -409,6 +464,7 @@ const VegeBentoDB = {
     const localSlides = JSON.parse(localStorage.getItem('vege_bento_photo_slides') || '[]');
     const localAnnouncements = JSON.parse(localStorage.getItem('vege_bento_announcements') || '[]');
     const localSettings = JSON.parse(localStorage.getItem('vege_bento_admin_settings') || 'null');
+    const localPlanned = JSON.parse(localStorage.getItem('vege_bento_planned_menus') || '[]');
 
     for (const dish of localDishes) {
       await this.saveDish(dish);
@@ -424,6 +480,9 @@ const VegeBentoDB = {
     }
     if (localSettings) {
       await this.saveAdminSettings(localSettings);
+    }
+    if (localPlanned && localPlanned.length > 0) {
+      await this.savePlannedMenus(localPlanned);
     }
 
     return {
