@@ -205,8 +205,7 @@
   </style>
 </head>
 
-<body class="text-slate-800 font-sans min-h-screen flex flex-col relative"
-  x-data="bentoApp()"
+<body class="text-slate-800 font-sans min-h-screen flex flex-col relative" x-data="bentoApp()"
   x-init="init(); $watch('fontSizeLevel', v => { document.documentElement.style.fontSize = v === 0 ? '14px' : v === 2 ? '18px' : '16px'; })">
   <div class="liquid-mesh"></div>
 
@@ -371,7 +370,7 @@
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">聯絡電話<span
                 class="text-rose-500">*</span></label>
-            <input type="tel" x-model="clientForm.userPhone" placeholder="例如：0912345678"
+            <input type="tel" x-model="clientForm.userPhone" placeholder="例如：0912345678，熟客可填1"
               class="w-full glass-input rounded-xl px-4 py-3 text-sm font-medium focus:outline-none">
           </div>
           <div class="sm:col-span-2">
@@ -493,7 +492,7 @@
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">飯別</label>
               <select x-model="clientForm.singleBento.riceType"
-                @change="if (clientForm.singleBento.riceType === '不飯菜多') { clientForm.singleBento.rice = '不飯菜多' }"
+                @change="if (clientForm.singleBento.riceType === '不飯菜多') { clientForm.singleBento.rice = '不飯菜多' } else if (['紫米飯', '白飯'].includes(clientForm.singleBento.riceType) && clientForm.singleBento.rice === '不飯菜多') { clientForm.singleBento.rice = '正常' }"
                 class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
                 <option value="">請選擇飯別</option>
                 <template x-for="type in riceTypeOptions" :key="type">
@@ -507,11 +506,11 @@
                 :disabled="!clientForm.singleBento.riceType || clientForm.singleBento.riceType === '不飯菜多'"
                 :class="!clientForm.singleBento.riceType || clientForm.singleBento.riceType === '不飯菜多' ? 'opacity-70 cursor-not-allowed' : ''"
                 class="w-full glass-input rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
-                <option value="正常">正常</option>
-                <option value="半飯">半飯(1/2)</option>
-                <option value="少飯">少飯(1/3)</option>
-                <option value="多飯">多飯(2/3)</option>
-                <option value="不飯菜多">-</option>
+                <option value="正常">正常(1)</option>
+                <option value="半飯">半飯(½)</option>
+                <option value="少飯">少飯(⅓)</option>
+                <option value="少一咪咪飯">少一咪咪飯(⅔)</option>
+                <option value="不飯菜多" :disabled="['紫米飯', '白飯'].includes(clientForm.singleBento.riceType)">-</option>
               </select>
             </div>
           </div>
@@ -661,7 +660,8 @@
                 <div class="space-y-3">
                   <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">飯別</label>
-                    <select x-model="row.riceType" @change="if (row.riceType === '不飯菜多') { row.rice = '不飯菜多' }"
+                    <select x-model="row.riceType"
+                      @change="if (row.riceType === '不飯菜多') { row.rice = '不飯菜多' } else if (['紫米飯', '白飯'].includes(row.riceType) && row.rice === '不飯菜多') { row.rice = '正常' }"
                       class="w-full glass-input rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none">
                       <option value="">請選擇飯別</option>
                       <template x-for="type in riceTypeOptions" :key="type">
@@ -674,11 +674,11 @@
                     <select x-model="row.rice" :disabled="!row.riceType || row.riceType === '不飯菜多'"
                       :class="!row.riceType || row.riceType === '不飯菜多' ? 'opacity-70 cursor-not-allowed' : ''"
                       class="w-full glass-input rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none">
-                      <option value="正常">正常</option>
-                      <option value="半飯">半飯(1/2)</option>
-                      <option value="少飯">少飯(1/3)</option>
-                      <option value="多飯">多飯(2/3)</option>
-                      <option value="不飯菜多">-</option>
+                      <option value="正常">正常(1)</option>
+                      <option value="半飯">半飯(½)</option>
+                      <option value="少飯">少飯(⅓)</option>
+                      <option value="少一咪咪飯">少一咪咪飯(⅔)</option>
+                      <option value="不飯菜多" :disabled="['紫米飯', '白飯'].includes(row.riceType)">-</option>
                     </select>
                   </div>
                 </div>
@@ -1297,8 +1297,15 @@
         },
 
         async loadDataFromStorage() {
-          // 透過 DB Helper 從 Supabase (或自動降級的 LocalStorage) 撈取資料
-          const dishes = await VegeBentoDB.getDishes();
+          // 平行同時發送所有 Supabase 請求，大幅縮短初始載入時間
+          const [dishes, slides, anns, dbOrders, plans] = await Promise.all([
+            VegeBentoDB.getDishes(),
+            VegeBentoDB.getPhotoSlides(),
+            VegeBentoDB.getAnnouncements(),
+            VegeBentoDB.getOrders(),
+            VegeBentoDB.getPlannedMenus()
+          ]);
+
           this.mainDishes = dishes.map(dish => {
             const normalized = {
               ...dish,
@@ -1316,21 +1323,17 @@
             return normalized;
           });
 
-          const slides = await VegeBentoDB.getPhotoSlides();
           if (slides && slides.length > 0) {
             this.photoSlides = slides;
           }
 
-          const anns = await VegeBentoDB.getAnnouncements();
           if (anns && anns.length > 0) {
             this.announcements = anns;
           }
 
-          const dbOrders = await VegeBentoDB.getOrders();
           this.orders = dbOrders;
 
           // 載入管理員排定的每日主菜 (供前端買家選擇預定日期)
-          const plans = await VegeBentoDB.getPlannedMenus();
           this.plannedMenus = Array.isArray(plans) ? plans : [];
           const todayStr = this.firstSelectableDate();
           if (this.plannedMenus.length > 0) {
@@ -1605,13 +1608,18 @@
 
         historyItemToFormRow(item, fallbackName) {
           const price = parseInt(item.price || 80);
+          const riceType = item.riceType || '';
+          let rice = item.rice || '正常';
+          if (['紫米飯', '白飯'].includes(riceType) && rice === '不飯菜多') {
+            rice = '正常';
+          }
           return {
             name: item.name || fallbackName,
             price: [80, 90, 100, 110, 120].includes(price) ? String(price) : 'other',
             otherPrice: [80, 90, 100, 110, 120].includes(price) ? '' : String(price),
             vegType: item.vegType || '全素',
-            riceType: item.riceType || '',
-            rice: item.rice || '正常',
+            riceType: riceType,
+            rice: rice,
             mainDish: item.mainDish || '',
             dislikes: Array.isArray(item.dislikes) ? [...item.dislikes] : [],
             otherDislike: item.otherDislike || ''
@@ -1869,14 +1877,14 @@
               const priceVal = this.clientForm.singleBento.price === 'other' ? this.clientForm.singleBento.otherPrice : this.clientForm.singleBento.price;
               let disStr = this.clientForm.singleBento.dislikes.join(',') + (this.clientForm.singleBento.otherDislike ? ' ' + this.clientForm.singleBento.otherDislike : '');
               const quantity = parseInt(this.clientForm.singleBento.quantity || 1);
-                for (let i = 0; i < quantity; i++) items.push({
+              for (let i = 0; i < quantity; i++) items.push({
                 name: '統一餐盒',
                 vegType: this.clientForm.singleBento.vegType,
                 price: parseInt(priceVal || 0),
                 riceType: this.clientForm.singleBento.riceType,
                 rice: this.clientForm.singleBento.rice,
-                  mainDish: this.clientForm.singleBento.mainDish || '未指定',
-                  mainDishId: (this.mainDishes.find(d => d.name === this.clientForm.singleBento.mainDish) || {}).id || null,
+                mainDish: this.clientForm.singleBento.mainDish || '未指定',
+                mainDishId: (this.mainDishes.find(d => d.name === this.clientForm.singleBento.mainDish) || {}).id || null,
                 dislikes: [...this.clientForm.singleBento.dislikes],
                 otherDislike: this.clientForm.singleBento.otherDislike,
                 summary: `[統一單] ${this.clientForm.singleBento.vegType} | NT$${priceVal} | 主菜: ${this.clientForm.singleBento.mainDish} | 飯別: ${this.clientForm.singleBento.riceType} | 飯量: ${this.clientForm.singleBento.rice} ${disStr ? '| 忌口: ' + disStr : ''}`,
