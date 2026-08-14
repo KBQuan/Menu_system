@@ -53,6 +53,68 @@
       transition: font-size 0.2s ease;
     }
 
+    /* ══ 訂購成功 Modal 動畫 ══ */
+    @keyframes successBounceIn {
+      0%   { opacity: 0; transform: scale(0.6) translateY(40px); }
+      60%  { opacity: 1; transform: scale(1.06) translateY(-8px); }
+      80%  { transform: scale(0.97) translateY(4px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes checkDraw {
+      from { stroke-dashoffset: 80; opacity: 0; }
+      to   { stroke-dashoffset: 0;  opacity: 1; }
+    }
+    @keyframes rippleOut {
+      0%   { transform: scale(1); opacity: 0.45; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(180px) rotate(720deg); opacity: 0; }
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(111,78,55,0.3); }
+      50%       { box-shadow: 0 0 0 14px rgba(111,78,55,0); }
+    }
+
+    .success-modal-card {
+      animation: successBounceIn 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .success-check-svg circle {
+      animation: rippleOut 1.6s ease-out 0.3s infinite;
+    }
+    .success-check-path {
+      stroke-dasharray: 80;
+      stroke-dashoffset: 80;
+      animation: checkDraw 0.55s ease-out 0.35s forwards;
+    }
+    .success-info-row {
+      animation: fadeSlideUp 0.4s ease-out both;
+    }
+    .success-info-row:nth-child(1) { animation-delay: 0.55s; }
+    .success-info-row:nth-child(2) { animation-delay: 0.65s; }
+    .success-info-row:nth-child(3) { animation-delay: 0.75s; }
+    .success-info-row:nth-child(4) { animation-delay: 0.85s; }
+    .success-info-row:nth-child(5) { animation-delay: 0.95s; }
+    .success-btn-row {
+      animation: fadeSlideUp 0.4s ease-out 1.05s both;
+    }
+    .success-confetti {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      animation: confettiFall 1.4s ease-in forwards;
+      pointer-events: none;
+    }
+    .success-id-badge {
+      animation: pulseGlow 2s ease-in-out 1s infinite;
+    }
+
     /* ── 手機底部 Tab Bar ── */
     .mobile-tab-bar {
       display: none;
@@ -1142,6 +1204,109 @@
     </div>
   </div>
 
+  <!-- ══ 訂購成功 Modal ══ -->
+  <div
+    x-show="showSuccessModal"
+    x-cloak
+    class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+    style="background: rgba(15,10,5,0.55); backdrop-filter: blur(8px);"
+    @click.self="showSuccessModal = false"
+  >
+    <!-- 彩帶容器（純裝飾） -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none" id="confetti-container"></div>
+
+    <!-- 主卡片 -->
+    <div class="success-modal-card relative w-full max-w-md mx-auto"
+         style="background: rgba(255,255,255,0.92); backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255,255,255,0.9); border-radius: 32px; box-shadow: 0 32px 80px -12px rgba(67,28,0,0.22), 0 0 0 1px rgba(255,255,255,0.6); overflow: hidden;">
+
+      <!-- 頂部漸層裝飾 -->
+      <div class="absolute top-0 inset-x-0 h-36 pointer-events-none"
+           style="background: linear-gradient(135deg, rgba(111,78,55,0.12) 0%, rgba(251,191,36,0.10) 50%, rgba(146,64,14,0.08) 100%);"></div>
+
+      <div class="relative px-6 pt-8 pb-7 flex flex-col items-center gap-4">
+
+        <!-- 成功圓圈動畫 -->
+        <div class="relative flex items-center justify-center" style="width: 90px; height: 90px;">
+          <!-- 漣漪圈 -->
+          <div class="absolute inset-0 rounded-full"
+               style="background: rgba(111,78,55,0.12); animation: rippleOut 1.6s ease-out 0.3s infinite;"></div>
+          <div class="absolute inset-0 rounded-full"
+               style="background: rgba(111,78,55,0.08); animation: rippleOut 1.6s ease-out 0.7s infinite;"></div>
+          <!-- 主圓圈 -->
+          <div class="w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
+               style="background: linear-gradient(135deg, #6f4e37, #92400e); box-shadow: 0 8px 24px rgba(111,78,55,0.4);">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <path class="success-check-path" d="M9 21 L17 30 L31 13"
+                    stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 標題文字 -->
+        <div class="text-center space-y-1" style="animation: fadeSlideUp 0.4s ease-out 0.4s both; opacity: 0;">
+          <h2 class="text-2xl font-black text-slate-900 tracking-tight">訂購成功！</h2>
+          <p class="text-sm text-slate-500 font-medium">您的便當已送出，感謝您的訂購 🎉</p>
+        </div>
+
+        <!-- 訂單號碼徽章 -->
+        <div class="success-id-badge px-5 py-2 rounded-full font-mono font-black text-sm tracking-widest"
+             style="background: linear-gradient(135deg, rgba(111,78,55,0.10), rgba(146,64,14,0.08)); border: 1.5px solid rgba(111,78,55,0.25); color: #5a3d28;"
+             x-text="lastOrderId">
+        </div>
+
+        <!-- 訂單詳情卡 -->
+        <div class="w-full rounded-2xl space-y-0 overflow-hidden"
+             style="border: 1px solid rgba(111,78,55,0.12); background: rgba(253,247,243,0.7);">
+
+          <template x-for="(row, idx) in lastOrderSummaryRows" :key="idx">
+            <div class="success-info-row flex items-center justify-between px-4 py-2.5"
+                 :style="idx < lastOrderSummaryRows.length - 1 ? 'border-bottom: 1px solid rgba(111,78,55,0.08);' : ''">
+              <span class="text-xs font-semibold text-slate-500" x-text="row.label"></span>
+              <span class="text-xs font-bold text-slate-800 text-right max-w-[60%] truncate" x-text="row.val"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- 總金額大字 -->
+        <div class="w-full rounded-2xl px-4 py-3 flex items-baseline justify-between"
+             style="background: linear-gradient(135deg, rgba(111,78,55,0.85), rgba(146,64,14,0.85)); animation: fadeSlideUp 0.4s ease-out 1.0s both; opacity: 0;">
+          <span class="text-sm font-bold text-amber-100">應付金額</span>
+          <div class="flex items-baseline gap-1">
+            <span class="text-xs font-bold text-amber-200">NT$</span>
+            <span class="text-3xl font-black text-white tracking-tight" x-text="lastOrderTotal"></span>
+          </div>
+        </div>
+
+        <!-- 操作按鈕 -->
+        <div class="success-btn-row w-full grid grid-cols-2 gap-3 pt-1">
+          <button
+            @click="showSuccessModal = false; activeTab = 'history'"
+            class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all"
+            style="background: rgba(255,255,255,0.7); border: 1.5px solid rgba(111,78,55,0.20); color: #5a3d28;"
+            onmouseover="this.style.background='rgba(255,255,255,0.95)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.7)'">
+            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+            查看歷史紀錄
+          </button>
+          <button
+            @click="showSuccessModal = false"
+            class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all"
+            style="background: linear-gradient(135deg, #6f4e37, #92400e); box-shadow: 0 4px 14px rgba(111,78,55,0.35);"
+            onmouseover="this.style.transform='translateY(-1.5px)'; this.style.boxShadow='0 6px 20px rgba(111,78,55,0.45)'"
+            onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 14px rgba(111,78,55,0.35)'">
+            <i class="fa-solid fa-plus text-xs"></i>
+            繼續訂購
+          </button>
+        </div>
+
+        <!-- 提示文字 -->
+        <p class="text-[11px] text-slate-400 text-center font-medium" style="animation: fadeSlideUp 0.4s ease-out 1.1s both; opacity: 0;">
+          <i class="fa-solid fa-circle-info mr-1"></i>訂單狀態更新後將顯示在歷史紀錄中
+        </p>
+      </div>
+    </div>
+  </div>
+
   <footer
     class="bg-white/40 backdrop-blur-md border-t border-white/20 py-4 text-center text-xs text-slate-600 relative z-10">
     <p>VegeTingyi 蔬食點餐系統 ©</p>
@@ -1169,6 +1334,10 @@
         activeTab: 'client',
         showHistoryModal: false,
         showAnnouncementsModal: false,
+        showSuccessModal: false,
+        lastOrderId: '',
+        lastOrderTotal: 0,
+        lastOrderSummaryRows: [],
         dislikesOptions: ['花椰菜', '咖哩', '茄子', '炸物', '素料', '青椒', '豆子', '苦瓜', '皇宮菜', '秋葵'],
         vegTypeOptions: ['全素', '蛋奶素', '奶素'],
         riceTypeOptions: ['紫米飯', '白飯', '不飯菜多'],
@@ -1950,6 +2119,26 @@
               'success'
             );
 
+            // 若非編輯模式，顯示訂購成功 Modal
+            if (!wasEditing) {
+              this.lastOrderId = newOrder.id;
+              this.lastOrderTotal = newOrder.totalAmount;
+              const d = newOrder.scheduledDate || '';
+              const dayNames = ['日','一','二','三','四','五','六'];
+              const dateLabel = d ? d.slice(5).replace('-','/') + ' (' + dayNames[new Date(d + 'T00:00:00').getDay()] + ')' : '今日';
+              this.lastOrderSummaryRows = [
+                { label: '訂購單位', val: newOrder.unit || '—' },
+                { label: '聯絡電話', val: newOrder.userPhone || '—' },
+                { label: '預定日期', val: dateLabel },
+                { label: '送達時間', val: newOrder.deliveryTime || '儘速送達' },
+                { label: '餐點數量', val: (newOrder.items || []).length + ' 份' },
+              ];
+              this.$nextTick(() => {
+                this.showSuccessModal = true;
+                this._spawnConfetti();
+              });
+            }
+
             // 表單初始化重置
             this.clientForm.unit = '';
             this.clientForm.deliveryAddress = '';
@@ -1971,6 +2160,31 @@
           this.toast.type = type;
           this.toast.show = true;
           setTimeout(() => { this.toast.show = false; }, 3500);
+        },
+
+        _spawnConfetti() {
+          const container = document.getElementById('confetti-container');
+          if (!container) return;
+          container.innerHTML = '';
+          const colors = ['#6f4e37','#b45309','#d97706','#fbbf24','#92400e','#f59e0b','#78350f','#fde68a'];
+          const count = 38;
+          for (let i = 0; i < count; i++) {
+            const el = document.createElement('div');
+            el.className = 'success-confetti';
+            el.style.cssText = [
+              `left:${10 + Math.random() * 80}%`,
+              `top:${5 + Math.random() * 25}%`,
+              `background:${colors[Math.floor(Math.random() * colors.length)]}`,
+              `width:${6 + Math.random() * 8}px`,
+              `height:${6 + Math.random() * 8}px`,
+              `border-radius:${Math.random() > 0.5 ? '50%' : '2px'}`,
+              `animation-delay:${Math.random() * 0.6}s`,
+              `animation-duration:${1.1 + Math.random() * 0.8}s`,
+              `transform:rotate(${Math.random()*360}deg)`
+            ].join(';');
+            container.appendChild(el);
+          }
+          setTimeout(() => { container.innerHTML = ''; }, 2500);
         }
       }
     }
