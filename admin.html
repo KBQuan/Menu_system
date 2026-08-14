@@ -1575,8 +1575,8 @@
         handleLocalPhotoUpload(event) {
           const file = event.target.files[0];
           if (file) {
-            if (file.size > 2 * 1024 * 1024) {
-              this.showToast('圖片檔案過大，請選擇小於 2MB 的本機照片！', 'warning');
+            if (file.size > 5 * 1024 * 1024) {
+              this.showToast('圖片檔案過大，請選擇小於 5MB 的本機照片！', 'warning');
               event.target.value = '';
               return;
             }
